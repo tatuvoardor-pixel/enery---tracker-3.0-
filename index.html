@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Energy Tracker</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-title" content="Energy Tracker">
+<meta name="theme-color" content="#000000">
+<meta name="description" content="Acompanhe água, calorias, proteína, carbo e gordura diários.">
+
+<script>
+  (function() {
+    // Ícone: raio verde grande centralizado, fundo preto
+    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+      <rect width="512" height="512" rx="100" fill="#000000"/>
+      <path d="M290 60 L96 284 H246 L214 452 L416 228 H266 Z" fill="#4ade80"/>
+    </svg>`;
+    const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
+    // Splash screen iOS: fundo preto + raio centralizado
+    const svgSplash = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1170 2532">
+      <rect width="1170" height="2532" fill="#000000"/>
+      <path d="M670 800 L296 1266 H566 L494 1732 L876 1266 H606 Z" fill="#4ade80"/>
+    </svg>`;
+    const splashUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSplash);
+
+    const manifest = {
+      name: "Energy Tracker",
+      short_name: "Energy",
+      display: "fullscreen",
+      orientation: "portrait",
+      start_url: "./index.html",
+      scope: "./",
+      background_color: "#000000",
+      theme_color: "#000000",
+      icons: [
+        { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+      ]
+    };
+
+    const manifestUrl = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+    const linkManifest = document.createElement('link');
+    linkManifest.rel = 'manifest';
+    linkManifest.href = manifestUrl;
+    document.head.appendChild(linkManifest);
+
+    // Apple touch icon (ícone na tela inicial iOS)
+    const linkIcon = document.createElement('link');
+    linkIcon.rel = 'apple-touch-icon';
+    linkIcon.href = iconUrl;
+    document.head.appendChild(linkIcon);
+
+    // Apple splash screen
+    const linkSplash = document.createElement('link');
+    linkSplash.rel = 'apple-touch-startup-image';
+    linkSplash.href = splashUrl;
+    document.head.appendChild(linkSplash);
+  })();
+</script>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body, html {
+    width: 100%;
+    height: 100%;
+    background-color: #000000;
+    color: #ffffff;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    font-family: Arial, sans-serif;
+  }
+
+  /* ── SPLASH SCREEN ── */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: #000000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    z-index: 999;
+    transition: opacity 0.5s ease;
+  }
+
+  #splash.hide {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #splash svg {
+    width: 140px;
+    height: 140px;
+    filter: drop-shadow(0 0 40px #4ade8088);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  #splash .splash-title {
+    font-family: "Arial Black", Arial, sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    color: #4ade80;
+    opacity: 0.85;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px #4ade8066); }
+    50%       { transform: scale(1.06); filter: drop-shadow(0 0 60px #4ade80cc); }
+  }
+
+  /* ── APP ── */
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100%;
+    background-color: #000000;
+    overflow-x: hidden;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .header {
+    padding: 20px 20px 12px 20px;
+    background-color: #000000;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #111;
+  }
+
+  .header-title {
+    font-family: "Arial Black", Arial, sans-serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .header-bolt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #000;
+    border: 2px solid #4ade80;
+    border-radius: 12px;
+    box-shadow: 0 0 16px #4ade8055, inset 0 0 8px #4ade8022;
+    flex-shrink: 0;
+  }
+
+  .header-bolt svg {
+    width: 24px;
+    height: 24px;
+    filter: drop-shadow(0 0 6px #4ade80);
+  }
+
+  .header-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+  }
+
+  .header-text span:first-child { color: #4ade80; }
+  .header-text span:last-child  { color: #ffffff; }
+
+  /* Banner de instalação */
+  #install-banner {
+    display: none;
+    margin: 10px 16px 0 16px;
+    background: #0a1f10;
+    border: 1px solid #4ade80;
+    border-radius: 14px;
+    padding: 10px 14px;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: #aaa;
+  }
+  #install-banner.visible { display: flex; }
+  #install-banner span { flex: 1; line-height: 1.4; }
+  #install-banner strong { color: #4ade80; }
+
+  .install-btn-yes {
+    background: #4ade80;
+    color: #000;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-weight: 900;
+    font-size: 0.78rem;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .install-btn-no {
+    background: transparent;
+    color: #555;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 16px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background-color: #0d0d0d;
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid #1a1a1a;
+    width: 100%;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .card-header .title {
+    font-family: "Arial Black", Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+
+  .meta-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #000;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid #222;
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  .meta-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed #555;
+    color: #fff;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-weight: 900;
+    font-size: 16px;
+    width: 52px;
+    text-align: center;
+    outline: none;
+    padding: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .meta-input:focus { border-bottom: 1px solid #4ade80; }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .stats {
+    font-family: "Arial Black", Arial, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #555;
+  }
+
+  .current-value { font-size: 2.2rem; font-weight: 900; }
+  .current-value.green { color: #4ade80; }
+  .current-value.red   { color: #ef4444; }
+
+  .progress-bg {
+    width: 100%;
+    height: 12px;
+    background-color: #1a1a1a;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.4s ease, background-color 0.3s ease;
+  }
+  .progress-fill.green { background-color: #4ade80; }
+  .progress-fill.red   { background-color: #ef4444; }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .add-input {
+    flex: 1;
+    min-width: 0;
+    background-color: #000;
+    border: 1px solid #222;
+    border-radius: 12px;
+    color: #fff;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-size: 16px;
+    padding: 0 12px;
+    height: 48px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .add-input:focus { border-color: #4ade80; }
+
+  .add-btn {
+    background-color: #4ade80;
+    color: #000000;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-weight: 900;
+    font-size: 1rem;
+    border: none;
+    border-radius: 12px;
+    padding: 0 24px;
+    height: 48px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .add-btn:active { background-color: #22c55e; }
+
+  .footer {
+    padding: 12px 16px 20px 16px;
+    background-color: #000000;
+    border-top: 1px solid #111;
+  }
+
+  .reset-btn {
+    width: 100%;
+    background-color: transparent;
+    color: #ef4444;
+    border: 1px solid #3a0f0f;
+    border-radius: 16px;
+    padding: 14px;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .reset-btn:active { background-color: #1a0505; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+    <path d="M57 5 L18 55 H46 L39 115 L82 65 H54 Z" fill="#4ade80"/>
+  </svg>
+  <div class="splash-title">Energy Tracker</div>
+</div>
+
+<div class="app-container" id="main-app">
+
+  <div class="header">
+    <div class="header-title" id="title-fs">
+      <div class="header-bolt">
+        <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+          <path d="M57 5 L18 55 H46 L39 115 L82 65 H54 Z" fill="#4ade80"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <span>ENERGY</span>
+        <span>TRACKER</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner de instalação (Android/Chrome) -->
+  <div id="install-banner">
+    <span>📲 <strong>Instalar como app?</strong> Abre direto, sem navegador!</span>
+    <button class="install-btn-yes" id="btn-install-yes">Instalar</button>
+    <button class="install-btn-no" id="btn-install-no">✕</button>
+  </div>
+
+  <div class="scroll-content">
+
+    <div class="card" id="card-agua">
+      <div class="card-header">
+        <span class="title">💧 ÁGUA</span>
+        <span class="meta-container">Meta: <input type="number" class="meta-input" value="4000"></span>
+      </div>
+      <div class="stats">
+        <span class="current-value green">0</span> / <span class="target-display">4000</span> ml
+      </div>
+      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
+      <div class="controls">
+        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
+        <button class="add-btn">OK</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-calorias">
+      <div class="card-header">
+        <span class="title">🔥 CALORIAS</span>
+        <span class="meta-container">Meta: <input type="number" class="meta-input" value="3000"></span>
+      </div>
+      <div class="stats">
+        <span class="current-value green">0</span> / <span class="target-display">3000</span> kcal
+      </div>
+      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
+      <div class="controls">
+        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
+        <button class="add-btn">OK</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-proteina">
+      <div class="card-header">
+        <span class="title">🥩 PROTEÍNA</span>
+        <span class="meta-container">Meta: <input type="number" class="meta-input" value="189"></span>
+      </div>
+      <div class="stats">
+        <span class="current-value green">0</span> / <span class="target-display">189</span> g
+      </div>
+      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
+      <div class="controls">
+        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
+        <button class="add-btn">OK</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-carboidrato">
+      <div class="card-header">
+        <span class="title">🍞 CARBO</span>
+        <span class="meta-container">Meta: <input type="number" class="meta-input" value="350"></span>
+      </div>
+      <div class="stats">
+        <span class="current-value green">0</span> / <span class="target-display">350</span> g
+      </div>
+      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
+      <div class="controls">
+        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
+        <button class="add-btn">OK</button>
+      </div>
+    </div>
+
+    <div class="card" id="card-gordura">
+      <div class="card-header">
+        <span class="title">🥑 GORDURA</span>
+        <span class="meta-container">Meta: <input type="number" class="meta-input" value="80"></span>
+      </div>
+      <div class="stats">
+        <span class="current-value green">0</span> / <span class="target-display">80</span> g
+      </div>
+      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
+      <div class="controls">
+        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
+        <button class="add-btn">OK</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <button class="reset-btn" id="btn-reset">
+      <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" width="16" height="16" style="vertical-align:middle;margin-right:6px;margin-bottom:2px"><path d="M57 5 L18 55 H46 L39 115 L82 65 H54 Z" fill="#ef4444"/></svg>
+      RESET
+    </button>
+  </div>
+
+</div>
+
+<script>
+  // ── Splash screen ─────────────────────────────────────
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('splash').classList.add('hide');
+      setTimeout(() => document.getElementById('splash').remove(), 600);
+    }, 1600);
+  });
+
+  // ── Cards ─────────────────────────────────────────────
+  function setupCard(cardId) {
+    const card = document.getElementById(cardId);
+    const metaInput = card.querySelector('.meta-input');
+    const targetDisplay = card.querySelector('.target-display');
+    const currentValueDisplay = card.querySelector('.current-value');
+    const progressFill = card.querySelector('.progress-fill');
+    const addInput = card.querySelector('.add-input');
+    const addBtn = card.querySelector('.add-btn');
+
+    let current = parseInt(localStorage.getItem(cardId + '_manual_current')) || 0;
+    const savedMeta = localStorage.getItem(cardId + '_manual_target');
+    if (savedMeta) metaInput.value = savedMeta;
+
+    function updateVisuals() {
+      let target = parseInt(metaInput.value);
+      if (isNaN(target) || target <= 0) target = 1;
+
+      targetDisplay.textContent = target;
+      currentValueDisplay.textContent = current;
+      localStorage.setItem(cardId + '_manual_current', current);
+      if (!isNaN(parseInt(metaInput.value))) {
+        localStorage.setItem(cardId + '_manual_target', target);
+      }
+
+      progressFill.style.width = Math.min((current / target) * 100, 100) + '%';
+
+      if (current > target && target > 1) {
+        currentValueDisplay.className = 'current-value red';
+        progressFill.className = 'progress-fill red';
+      } else {
+        currentValueDisplay.className = 'current-value green';
+        progressFill.className = 'progress-fill green';
+      }
+    }
+
+    metaInput.addEventListener('input', updateVisuals);
+    metaInput.addEventListener('blur', () => {
+      if (!metaInput.value || parseInt(metaInput.value) <= 0) {
+        metaInput.value = "100";
+        updateVisuals();
+      }
+    });
+
+    addBtn.addEventListener('click', () => {
+      const v = parseInt(addInput.value);
+      if (!isNaN(v) && v > 0) { current += v; addInput.value = ''; updateVisuals(); }
+    });
+
+    card.resetData = () => { current = 0; updateVisuals(); };
+    updateVisuals();
+  }
+
+  ['card-agua','card-calorias','card-proteina','card-carboidrato','card-gordura']
+    .forEach(setupCard);
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (confirm("Deseja resetar todos os marcadores agora?")) {
+      ['card-agua','card-calorias','card-proteina','card-carboidrato','card-gordura']
+        .forEach(id => document.getElementById(id).resetData());
+    }
+  });
+
+  // ── Tela cheia ────────────────────────────────────────
+  const totalApp = document.getElementById('main-app');
+  const autoFullscreen = () => {
+    if (!document.fullscreenElement)
+      totalApp.requestFullscreen().catch(() => {});
+    document.removeEventListener('click', autoFullscreen);
+    document.removeEventListener('touchstart', autoFullscreen);
+  };
+  document.addEventListener('click', autoFullscreen);
+  document.addEventListener('touchstart', autoFullscreen);
+
+  document.getElementById('title-fs').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!document.fullscreenElement)
+      totalApp.requestFullscreen().catch(() => {});
+    else
+      document.exitFullscreen();
+  });
+
+  // ── Service Worker ────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+
+  // ── Banner de instalação (Android Chrome) ─────────────
+  let deferredPrompt = null;
+  const banner = document.getElementById('install-banner');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    banner.classList.add('visible');
+  });
+
+  document.getElementById('btn-install-yes').addEventListener('click', async () => {
+    banner.classList.remove('visible');
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+    }
+  });
+
+  document.getElementById('btn-install-no').addEventListener('click', () => {
+    banner.classList.remove('visible');
+  });
+
+  window.addEventListener('appinstalled', () => banner.classList.remove('visible'));
+</script>
+</body>
+</html>
