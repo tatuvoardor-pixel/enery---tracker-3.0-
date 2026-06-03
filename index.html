@@ -61,7 +61,7 @@ button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:
 .hbolt{width:32px;height:32px;background:var(--bg);border:1.5px solid var(--grn);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--grn-d);flex-shrink:0;}
 .hbolt svg{width:16px;height:16px;filter:drop-shadow(0 0 4px var(--grn));}
 .hname{font-family:'Fredoka',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--grn);white-space:nowrap;}
-.hdate{font-family:'Roboto Mono',monospace;font-size:0.52rem;letter-spacing:1px;text-transform:uppercase;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.hdate{font-family:'Roboto Mono',monospace;font-size:0.52rem;color:var(--t3);white-space:nowrap;}
 .hstreak{display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--grn);background:var(--grn-d);border:1px solid var(--grn-m);border-radius:6px;padding:4px 8px;flex-shrink:0;}
 
 /* ── SCROLL ── */
@@ -107,16 +107,16 @@ button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:
 .nc.prot{background:var(--s1);border:1px solid var(--prot-m);}
 .nc.carb{background:var(--s1);border:1px solid var(--carb-m);}
 .nc.gord{background:var(--s1);border:1px solid var(--gord-m);}
-.nc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.nc-left{display:flex;align-items:center;gap:8px;}
+.nc-top{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;overflow:hidden;}
+.nc-left{display:flex;align-items:center;gap:6px;min-width:0;flex:1;}
 .nc-icon{font-size:1.2rem;flex-shrink:0;}
-.nc-name{font-family:'Oswald',sans-serif;font-size:1rem;text-transform:uppercase;letter-spacing:1px;}
+.nc-name{font-family:'Oswald',sans-serif;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .nc.agua .nc-name{color:var(--agua);}
 .nc.cals .nc-name{color:var(--grn);}
 .nc.prot .nc-name{color:var(--prot);}
 .nc.carb .nc-name{color:var(--carb);}
 .nc.gord .nc-name{color:var(--gord);}
-.nc-meta{display:flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:4px 7px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);max-width:160px;overflow:hidden;}
+.nc-meta{display:flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);flex-shrink:0;}
 .nc-meta-input{background:transparent;border:none;border-bottom:1px dashed var(--bd);color:var(--tx);font-family:'Fredoka',sans-serif;font-size:0.95rem;width:44px;text-align:center;outline:none;padding:0;-webkit-appearance:none;}
 .nc.agua .nc-meta-input:focus{border-bottom-color:var(--agua);}
 .nc.cals .nc-meta-input:focus{border-bottom-color:var(--grn);}
@@ -730,7 +730,7 @@ document.getElementById('btn-reset').addEventListener('click',()=>{
 // ══ DATA ══════════════════════════════════════════════
 function updateDate(){
   const el=document.getElementById('hdr-date');
-  if(el)el.textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase();
+  const n=new Date();const dias=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];if(el)el.textContent=dias[n.getDay()]+' '+String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0');
 }
 
 // ══ TELA CHEIA ════════════════════════════════════════
