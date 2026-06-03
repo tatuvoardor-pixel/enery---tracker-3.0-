@@ -1,635 +1,766 @@
 <!DOCTYPE html>
+<!-- FUEL © 2025 — Todos os direitos reservados -->
+<!-- Criado por: Eliezer Silva Giorni — Versão 1.0 -->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Energy Tracker</title>
-
+<title>FUEL</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-title" content="Energy Tracker">
-<meta name="theme-color" content="#000000">
-<meta name="description" content="Acompanhe água, calorias, proteína, carbo e gordura diários.">
-
+<meta name="mobile-web-app-title" content="FUEL">
+<meta name="theme-color" content="#09090b">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Oswald:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <script>
-  (function() {
-    // Ícone: raio verde grande centralizado, fundo preto
-    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-      <rect width="512" height="512" rx="110" fill="#000000"/>
-      <path d="M280 100 L176 272 H244 L224 412 L336 240 H268 Z" fill="#4ade80"/>
-    </svg>`;
-    const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
-
-    // Splash screen iOS: fundo preto + raio centralizado
-    const svgSplash = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1170 2532">
-      <rect width="1170" height="2532" fill="#000000"/>
-      <path d="M670 800 L296 1266 H566 L494 1732 L876 1266 H606 Z" fill="#4ade80"/>
-    </svg>`;
-    const splashUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSplash);
-
-    const manifest = {
-      name: "Energy Tracker",
-      short_name: "Energy",
-      display: "fullscreen",
-      orientation: "portrait",
-      start_url: "./index.html",
-      scope: "./",
-      background_color: "#000000",
-      theme_color: "#000000",
-      icons: [
-        { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
-      ]
-    };
-
-    const manifestUrl = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
-    const linkManifest = document.createElement('link');
-    linkManifest.rel = 'manifest';
-    linkManifest.href = manifestUrl;
-    document.head.appendChild(linkManifest);
-
-    // Apple touch icon (ícone na tela inicial iOS)
-    const linkIcon = document.createElement('link');
-    linkIcon.rel = 'apple-touch-icon';
-    linkIcon.href = iconUrl;
-    document.head.appendChild(linkIcon);
-
-    // Apple splash screen
-    const linkSplash = document.createElement('link');
-    linkSplash.rel = 'apple-touch-startup-image';
-    linkSplash.href = splashUrl;
-    document.head.appendChild(linkSplash);
-  })();
+(function(){
+  const ico=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="112" fill="#09090b"/>
+    <path d="M296 80 L152 272 H232 L208 432 L360 240 H280 Z" fill="#4ade80"/>
+    <path d="M296 80 L152 272 H232 L208 432 L360 240 H280 Z" fill="none" stroke="#4ade8055" stroke-width="3"/>
+  </svg>`;
+  const iUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(ico);
+  const mf={name:"FUEL",short_name:"FUEL",display:"fullscreen",orientation:"portrait",start_url:"./index.html",scope:"./",background_color:"#09090b",theme_color:"#09090b",icons:[{src:iUrl,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+  const ml=document.createElement('link');ml.rel='manifest';ml.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(mf));document.head.appendChild(ml);
+  const il=document.createElement('link');il.rel='apple-touch-icon';il.href=iUrl;document.head.appendChild(il);
+})();
 </script>
-
 <style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-  }
+:root{
+  --bg:#09090b; --s1:#111114; --s2:#18181c; --s3:#242428; --bd:#36363e;
+  --tx:#f4f4f5; --t2:#a1a1aa; --t3:#62626e;
+  --grn:#4ade80; --grn-d:#4ade8012; --grn-m:#4ade8040;
+  --grn2:#22c55e; --grn3:#86efac;
+  --yel:#f59e0b; --org:#f97316; --red:#ef4444;
+  --agua:#38bdf8; --agua-d:#38bdf812; --agua-m:#38bdf840;
+  --prot:#a78bfa; --prot-d:#a78bfa12; --prot-m:#a78bfa40;
+  --carb:#fb923c; --carb-d:#fb923c12; --carb-m:#fb923c40;
+  --gord:#fbbf24; --gord-d:#fbbf2412; --gord-m:#fbbf2440;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body,html{width:100%;height:100%;background:var(--bg);color:var(--tx);overflow:hidden;position:fixed;top:0;left:0;font-family:'Inter',sans-serif;}
+button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:inherit;cursor:pointer;outline:none;}
 
-  body, html {
-    width: 100%;
-    height: 100%;
-    background-color: #000000;
-    color: #ffffff;
-    overflow: hidden;
-    position: fixed;
-    top: 0;
-    left: 0;
-    font-family: Arial, sans-serif;
-  }
+/* ── PARTÍCULAS MOLECULARES ── */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
 
-  /* ── SPLASH SCREEN ── */
-  #splash {
-    position: fixed;
-    inset: 0;
-    background: #000000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    z-index: 999;
-    transition: opacity 0.5s ease;
-  }
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;transition:opacity 0.9s ease;padding:0 30px;}
+#splash.hide{opacity:0;pointer-events:none;}
+#splash .sp-bolt{width:90px;height:90px;animation:spUp 0.8s ease forwards,boltPulse 2s 0.8s ease-in-out infinite;opacity:0;filter:drop-shadow(0 0 30px #4ade8088);}
+#splash .sp-name{font-family:'Fredoka',sans-serif;font-size:2.6rem;letter-spacing:4px;color:var(--grn);animation:spUp 0.8s 0.15s ease forwards;opacity:0;text-align:center;}
+#splash .sp-sub{font-family:'Roboto Mono',monospace;font-size:0.6rem;letter-spacing:4px;text-transform:uppercase;color:var(--t3);animation:spUp 0.8s 0.3s ease forwards;opacity:0;text-align:center;}
+@keyframes spUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes boltPulse{0%,100%{filter:drop-shadow(0 0 20px #4ade8066);}50%{filter:drop-shadow(0 0 50px #4ade80cc);}}
 
-  #splash.hide {
-    opacity: 0;
-    pointer-events: none;
-  }
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;width:100vw;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);position:relative;z-index:10;}
 
-  #splash svg {
-    width: 140px;
-    height: 140px;
-    filter: drop-shadow(0 0 40px #4ade8088);
-    animation: pulse 1.6s ease-in-out infinite;
-  }
+/* ── HEADER ── */
+.hdr{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--bd);gap:8px;}
+.hlogo{display:flex;align-items:center;gap:9px;min-width:0;flex:1;}
+.hbolt{width:32px;height:32px;background:var(--bg);border:1.5px solid var(--grn);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--grn-d);flex-shrink:0;}
+.hbolt svg{width:16px;height:16px;filter:drop-shadow(0 0 4px var(--grn));}
+.hname{font-family:'Fredoka',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--grn);}
+.hdate{font-family:'Roboto Mono',monospace;font-size:0.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--t3);}
+.hstreak{display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--grn);background:var(--grn-d);border:1px solid var(--grn-m);border-radius:6px;padding:4px 8px;flex-shrink:0;}
 
-  #splash .splash-title {
-    font-family: "Arial Black", Arial, sans-serif;
-    font-size: 1.4rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 6px;
-    color: #4ade80;
-    opacity: 0.85;
-  }
+/* ── SCROLL ── */
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 13px 24px;display:flex;flex-direction:column;gap:10px;}
 
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px #4ade8066); }
-    50%       { transform: scale(1.06); filter: drop-shadow(0 0 60px #4ade80cc); }
-  }
+/* ── CARD BASE ── */
+.card{background:var(--s1);border:1px solid rgba(255,255,255,0.055);box-shadow:0 12px 32px rgba(0,0,0,0.7),0 4px 12px rgba(0,0,0,0.4);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;}
 
-  /* ── APP ── */
-  .app-container {
-    display: flex;
-    flex-direction: column;
-    width: 100vw;
-    height: 100%;
-    background-color: #000000;
-    overflow-x: hidden;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
+/* ── RESUMO DO DIA ── */
+.resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.resumo-item{background:var(--s2);border-radius:10px;padding:11px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--bd);}
+.resumo-item.agua{border-color:var(--agua-m);background:var(--agua-d);}
+.resumo-item.cals{border-color:var(--grn-m);background:var(--grn-d);}
+.resumo-item.prot{border-color:var(--prot-m);background:var(--prot-d);}
+.resumo-item.carb{border-color:var(--carb-m);background:var(--carb-d);}
+.resumo-item.gord{border-color:var(--gord-m);background:var(--gord-d);grid-column:1/-1;}
+.resumo-val{font-family:'Fredoka',sans-serif;font-size:1.6rem;line-height:1;}
+.resumo-item.agua .resumo-val{color:var(--agua);}
+.resumo-item.cals .resumo-val{color:var(--grn);}
+.resumo-item.prot .resumo-val{color:var(--prot);}
+.resumo-item.carb .resumo-val{color:var(--carb);}
+.resumo-item.gord .resumo-val{color:var(--gord);}
+.resumo-meta{font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);letter-spacing:1px;}
+.resumo-pct{font-family:'Roboto Mono',monospace;font-size:0.65rem;font-weight:700;}
+.resumo-item.agua .resumo-pct{color:var(--agua);}
+.resumo-item.cals .resumo-pct{color:var(--grn);}
+.resumo-item.prot .resumo-pct{color:var(--prot);}
+.resumo-item.carb .resumo-pct{color:var(--carb);}
+.resumo-item.gord .resumo-pct{color:var(--gord);}
+/* Mini barra de progresso no resumo */
+.resumo-bar{height:3px;background:var(--s3);border-radius:2px;overflow:hidden;margin-top:2px;}
+.resumo-bar-fill{height:100%;border-radius:2px;transition:width 0.5s ease;}
+.resumo-item.agua .resumo-bar-fill{background:var(--agua);}
+.resumo-item.cals .resumo-bar-fill{background:var(--grn);}
+.resumo-item.prot .resumo-bar-fill{background:var(--prot);}
+.resumo-item.carb .resumo-bar-fill{background:var(--carb);}
+.resumo-item.gord .resumo-bar-fill{background:var(--gord);}
 
-  .header {
-    padding: 20px 20px 12px 20px;
-    background-color: #000000;
-    z-index: 10;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #111;
-  }
+/* ── CARD NUTRIENTE ── */
+.nc{border-radius:12px;padding:15px;display:flex;flex-direction:column;gap:10px;}
+.nc.agua{background:var(--s1);border:1px solid var(--agua-m);}
+.nc.cals{background:var(--s1);border:1px solid var(--grn-m);}
+.nc.prot{background:var(--s1);border:1px solid var(--prot-m);}
+.nc.carb{background:var(--s1);border:1px solid var(--carb-m);}
+.nc.gord{background:var(--s1);border:1px solid var(--gord-m);}
+.nc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.nc-left{display:flex;align-items:center;gap:8px;}
+.nc-icon{font-size:1.2rem;flex-shrink:0;}
+.nc-name{font-family:'Oswald',sans-serif;font-size:1rem;text-transform:uppercase;letter-spacing:1px;}
+.nc.agua .nc-name{color:var(--agua);}
+.nc.cals .nc-name{color:var(--grn);}
+.nc.prot .nc-name{color:var(--prot);}
+.nc.carb .nc-name{color:var(--carb);}
+.nc.gord .nc-name{color:var(--gord);}
+.nc-meta{display:flex;align-items:center;gap:4px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:5px 9px;font-family:'Roboto Mono',monospace;font-size:0.62rem;color:var(--t3);}
+.nc-meta-input{background:transparent;border:none;border-bottom:1px dashed var(--bd);color:var(--tx);font-family:'Fredoka',sans-serif;font-size:1rem;width:50px;text-align:center;outline:none;padding:0;-webkit-appearance:none;}
+.nc.agua .nc-meta-input:focus{border-bottom-color:var(--agua);}
+.nc.cals .nc-meta-input:focus{border-bottom-color:var(--grn);}
+.nc.prot .nc-meta-input:focus{border-bottom-color:var(--prot);}
+.nc.carb .nc-meta-input:focus{border-bottom-color:var(--carb);}
+.nc.gord .nc-meta-input:focus{border-bottom-color:var(--gord);}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;}
 
-  .header-title {
-    font-family: "Arial Black", Arial, sans-serif;
-    font-size: 1.6rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.5px;
-    line-height: 1.1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    user-select: none;
-  }
+.nc-vals{display:flex;align-items:baseline;gap:6px;}
+.nc-cur{font-family:'Fredoka',sans-serif;font-size:2.4rem;line-height:1;transition:color 0.4s;}
+.nc.agua .nc-cur{color:var(--agua);}
+.nc.cals .nc-cur{color:var(--grn);}
+.nc.prot .nc-cur{color:var(--prot);}
+.nc.carb .nc-cur{color:var(--carb);}
+.nc.gord .nc-cur{color:var(--gord);}
+.nc-cur.over{color:var(--red)!important;}
+.nc-sep{font-family:'Roboto Mono',monospace;font-size:1rem;color:var(--t3);}
+.nc-tgt{font-family:'Roboto Mono',monospace;font-size:0.9rem;color:var(--t3);}
+.nc-unit{font-family:'Oswald',sans-serif;font-size:0.7rem;letter-spacing:1px;color:var(--t3);}
 
-  .header-bolt {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    background: #000;
-    border: 2px solid #4ade80;
-    border-radius: 12px;
-    box-shadow: 0 0 16px #4ade8055, inset 0 0 8px #4ade8022;
-    flex-shrink: 0;
-  }
+/* Barra de progresso */
+.nc-progbg{height:8px;background:var(--s3);border-radius:4px;overflow:hidden;}
+.nc-progfill{height:100%;border-radius:4px;transition:width 0.4s ease,background 0.3s ease;}
 
-  .header-bolt svg {
-    width: 24px;
-    height: 24px;
-    filter: drop-shadow(0 0 6px #4ade80);
-  }
+/* Atalhos rápidos */
+.nc-quick{display:flex;gap:6px;flex-wrap:wrap;}
+.qbtn{background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:5px 10px;font-family:'Roboto Mono',monospace;font-size:0.68rem;font-weight:700;color:var(--t2);cursor:pointer;transition:all 0.15s;}
+.nc.agua .qbtn:active{background:var(--agua-d);border-color:var(--agua);color:var(--agua);}
+.nc.cals .qbtn:active{background:var(--grn-d);border-color:var(--grn);color:var(--grn);}
+.nc.prot .qbtn:active{background:var(--prot-d);border-color:var(--prot);color:var(--prot);}
+.nc.carb .qbtn:active{background:var(--carb-d);border-color:var(--carb);color:var(--carb);}
+.nc.gord .qbtn:active{background:var(--gord-d);border-color:var(--gord);color:var(--gord);}
 
-  .header-text {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.05;
-  }
+/* Input + botão adicionar */
+.nc-add{display:flex;gap:8px;}
+.nc-add-input{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:'Fredoka',sans-serif;font-size:1.1rem;padding:0 12px;height:46px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;}
+.nc.agua .nc-add-input:focus{border-color:var(--agua);}
+.nc.cals .nc-add-input:focus{border-color:var(--grn);}
+.nc.prot .nc-add-input:focus{border-color:var(--prot);}
+.nc.carb .nc-add-input:focus{border-color:var(--carb);}
+.nc.gord .nc-add-input:focus{border-color:var(--gord);}
+.nc-add-btn{height:46px;padding:0 20px;border-radius:10px;font-family:'Fredoka',sans-serif;font-size:1rem;letter-spacing:0.5px;transition:opacity 0.15s;flex-shrink:0;}
+.nc-add-btn:active{opacity:0.8;}
+.nc.agua .nc-add-btn{background:var(--agua);color:#000;}
+.nc.cals .nc-add-btn{background:var(--grn);color:#000;}
+.nc.prot .nc-add-btn{background:var(--prot);color:#000;}
+.nc.carb .nc-add-btn{background:var(--carb);color:#000;}
+.nc.gord .nc-add-btn{background:var(--gord);color:#000;}
 
-  .header-text span:first-child { color: #4ade80; }
-  .header-text span:last-child  { color: #ffffff; }
+/* ── HISTÓRICO 7 DIAS ── */
+.hist-bars{display:flex;align-items:flex-end;gap:5px;height:60px;}
+.hist-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.hist-bar-bg{width:100%;flex:1;background:var(--s2);border-radius:3px;overflow:hidden;display:flex;align-items:flex-end;}
+.hist-bar-fill{width:100%;border-radius:3px;transition:height 0.6s ease;}
+.hist-bar-lbl{font-family:'Roboto Mono',monospace;font-size:0.52rem;color:var(--t3);}
+.hist-bar-lbl.today{color:var(--grn);}
 
-  /* Banner de instalação */
-  #install-banner {
-    display: none;
-    margin: 10px 16px 0 16px;
-    background: #0a1f10;
-    border: 1px solid #4ade80;
-    border-radius: 14px;
-    padding: 10px 14px;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.82rem;
-    color: #aaa;
-  }
-  #install-banner.visible { display: flex; }
-  #install-banner span { flex: 1; line-height: 1.4; }
-  #install-banner strong { color: #4ade80; }
+/* ── ANÁLISE IA ── */
+.ai-hdr{display:flex;align-items:center;gap:9px;}
+.ai-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--grn),var(--grn2));display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;}
+.ai-titulo{font-family:'Oswald',sans-serif;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.5px;}
+.ai-fonte{font-family:'Roboto Mono',monospace;font-size:0.55rem;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-top:1px;}
+.ai-body{font-size:0.78rem;color:var(--t2);line-height:1.7;min-height:48px;}
+.ai-load{display:flex;align-items:center;gap:8px;color:var(--t3);font-size:0.72rem;}
+.ai-dots span{display:inline-block;width:4px;height:4px;border-radius:1px;animation:aiD 1.2s ease-in-out infinite;}
+.ai-dots span:nth-child(1){background:var(--grn);}
+.ai-dots span:nth-child(2){background:var(--grn2);animation-delay:0.2s;}
+.ai-dots span:nth-child(3){background:var(--grn3);animation-delay:0.4s;}
+@keyframes aiD{0%,80%,100%{transform:scale(0.5);opacity:0.3;}40%{transform:scale(1);opacity:1;}}
+.btn-ai{width:100%;padding:12px;background:var(--grn-d);color:var(--grn);border:1px solid var(--grn-m);border-radius:8px;font-family:'Oswald',sans-serif;font-size:0.85rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.btn-ai:active{background:var(--grn-m);}
 
-  .install-btn-yes {
-    background: #4ade80;
-    color: #000;
-    font-family: "Arial Black", Arial, sans-serif;
-    font-weight: 900;
-    font-size: 0.78rem;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
+/* ── FOOTER ── */
+.ftr{padding:10px 13px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-shrink:0;}
+.btn-reset{flex:1;padding:13px;background:transparent;color:var(--red);border:1px solid #4a1010;border-radius:10px;font-family:'Oswald',sans-serif;font-size:0.9rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background 0.15s;}
+.btn-reset:active{background:#120404;}
+.btn-hist{padding:13px 16px;background:var(--s2);color:var(--t2);border:1px solid var(--bd);border-radius:10px;font-family:'Roboto Mono',monospace;font-size:0.62rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;flex-shrink:0;}
+.btn-hist.ativo{background:var(--grn-d);color:var(--grn);border-color:var(--grn-m);}
 
-  .install-btn-no {
-    background: transparent;
-    color: #555;
-    border: none;
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-  }
-
-  .scroll-content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 16px 16px 16px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .card {
-    background-color: #0d0d0d;
-    border-radius: 20px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    border: 1px solid #1a1a1a;
-    width: 100%;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-
-  .card-header .title {
-    font-family: "Arial Black", Arial, sans-serif;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: bold;
-  }
-
-  .meta-container {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: #000;
-    padding: 6px 10px;
-    border-radius: 10px;
-    border: 1px solid #222;
-    font-size: 0.85rem;
-    color: #888;
-  }
-
-  .meta-input {
-    background: transparent;
-    border: none;
-    border-bottom: 1px dashed #555;
-    color: #fff;
-    font-family: "Arial Black", Arial, sans-serif;
-    font-weight: 900;
-    font-size: 16px;
-    width: 52px;
-    text-align: center;
-    outline: none;
-    padding: 0;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .meta-input:focus { border-bottom: 1px solid #4ade80; }
-
-  input::-webkit-outer-spin-button,
-  input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-  .stats {
-    font-family: "Arial Black", Arial, sans-serif;
-    font-size: 1.2rem;
-    font-weight: 900;
-    color: #555;
-  }
-
-  .current-value { font-size: 2.2rem; font-weight: 900; }
-  .current-value.green { color: #4ade80; }
-  .current-value.red   { color: #ef4444; }
-
-  .progress-bg {
-    width: 100%;
-    height: 12px;
-    background-color: #1a1a1a;
-    border-radius: 6px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    border-radius: 6px;
-    transition: width 0.4s ease, background-color 0.3s ease;
-  }
-  .progress-fill.green { background-color: #4ade80; }
-  .progress-fill.red   { background-color: #ef4444; }
-
-  .controls {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-  }
-
-  .add-input {
-    flex: 1;
-    min-width: 0;
-    background-color: #000;
-    border: 1px solid #222;
-    border-radius: 12px;
-    color: #fff;
-    font-family: "Arial Black", Arial, sans-serif;
-    font-size: 16px;
-    padding: 0 12px;
-    height: 48px;
-    outline: none;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .add-input:focus { border-color: #4ade80; }
-
-  .add-btn {
-    background-color: #4ade80;
-    color: #000000;
-    font-family: "Arial Black", Arial, sans-serif;
-    font-weight: 900;
-    font-size: 1rem;
-    border: none;
-    border-radius: 12px;
-    padding: 0 24px;
-    height: 48px;
-    cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .add-btn:active { background-color: #22c55e; }
-
-  .footer {
-    padding: 12px 16px 20px 16px;
-    background-color: #000000;
-    border-top: 1px solid #111;
-  }
-
-  .reset-btn {
-    width: 100%;
-    background-color: transparent;
-    color: #ef4444;
-    border: 1px solid #3a0f0f;
-    border-radius: 16px;
-    padding: 14px;
-    font-family: "Arial Black", Arial, sans-serif;
-    font-size: 1.1rem;
-    font-weight: 900;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .reset-btn:active { background-color: #1a0505; }
+/* Install banner */
+#ib{display:none;background:#0a1f10;border:1px solid var(--grn);border-radius:10px;padding:8px 12px;align-items:center;gap:8px;font-size:0.75rem;color:var(--t2);}
+#ib.show{display:flex;}
+#ib span{flex:1;line-height:1.4;}
+#ib strong{color:var(--grn);}
+.ib-y{background:var(--grn);color:#000;font-family:'Fredoka',sans-serif;font-size:0.75rem;border:none;border-radius:6px;padding:5px 9px;cursor:pointer;white-space:nowrap;}
+.ib-n{background:transparent;color:var(--t3);border:none;font-size:0.9rem;cursor:pointer;padding:3px;}
+.hidden{display:none!important;}
+.lbl{font-family:'Roboto Mono',monospace;font-size:0.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--t3);}
 </style>
 </head>
 <body>
 
-<!-- SPLASH SCREEN -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- SPLASH -->
 <div id="splash">
-  <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+  <svg class="sp-bolt" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
     <path d="M57 5 L18 55 H46 L39 115 L82 65 H54 Z" fill="#4ade80"/>
   </svg>
-  <div class="splash-title">Energy Tracker</div>
+  <div class="sp-name">FUEL</div>
+  <div class="sp-sub">Combustível do Corpo</div>
 </div>
 
-<div class="app-container" id="main-app">
-
-  <div class="header">
-    <div class="header-title" id="title-fs">
-      <div class="header-bolt">
+<div class="app" id="main-app">
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hlogo">
+      <div class="hbolt">
         <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
           <path d="M57 5 L18 55 H46 L39 115 L82 65 H54 Z" fill="#4ade80"/>
         </svg>
       </div>
-      <div class="header-text">
-        <span>ENERGY</span>
-        <span>TRACKER</span>
-      </div>
+      <span class="hname">FUEL</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="hdate" id="hdr-date"></span>
+      <div class="hstreak" id="hdr-streak">🔥 0</div>
     </div>
   </div>
 
-  <!-- Banner de instalação (Android/Chrome) -->
-  <div id="install-banner">
-    <span>📲 <strong>Instalar como app?</strong> Abre direto, sem navegador!</span>
-    <button class="install-btn-yes" id="btn-install-yes">Instalar</button>
-    <button class="install-btn-no" id="btn-install-no">✕</button>
+  <div class="scroll">
+    <div id="ib"><span>📲 <strong>Instalar?</strong></span><button class="ib-y" id="ib-y">Instalar</button><button class="ib-n" id="ib-n">✕</button></div>
+
+    <!-- RESUMO DO DIA -->
+    <div class="card" id="card-resumo">
+      <div class="lbl">Resumo de hoje</div>
+      <div class="resumo-grid">
+        <div class="resumo-item agua">
+          <div class="resumo-val" id="r-agua">0</div>
+          <div class="resumo-meta">/ <span id="r-agua-meta">4000</span> ml</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-agua-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-agua-pct">0%</div>
+        </div>
+        <div class="resumo-item cals">
+          <div class="resumo-val" id="r-cals">0</div>
+          <div class="resumo-meta">/ <span id="r-cals-meta">3000</span> kcal</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-cals-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-cals-pct">0%</div>
+        </div>
+        <div class="resumo-item prot">
+          <div class="resumo-val" id="r-prot">0</div>
+          <div class="resumo-meta">/ <span id="r-prot-meta">189</span> g</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-prot-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-prot-pct">0%</div>
+        </div>
+        <div class="resumo-item carb">
+          <div class="resumo-val" id="r-carb">0</div>
+          <div class="resumo-meta">/ <span id="r-carb-meta">350</span> g</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-carb-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-carb-pct">0%</div>
+        </div>
+        <div class="resumo-item gord">
+          <div class="resumo-val" id="r-gord">0</div>
+          <div class="resumo-meta">/ <span id="r-gord-meta">80</span> g</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-gord-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-gord-pct">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÁGUA -->
+    <div class="nc agua card" id="nc-agua">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">💧</div><div class="nc-name">Água</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-agua" value="4000" inputmode="numeric"> ml</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-agua">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-agua">4000</div>
+        <div class="nc-unit">ml</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-agua" style="width:0%;background:var(--agua)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="150">150ml</button>
+        <button class="qbtn" data-v="200">200ml</button>
+        <button class="qbtn" data-v="300">300ml</button>
+        <button class="qbtn" data-v="500">500ml</button>
+        <button class="qbtn" data-v="750">750ml</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-agua" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-agua">+</button>
+      </div>
+    </div>
+
+    <!-- CALORIAS -->
+    <div class="nc cals card" id="nc-cals">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">⚡</div><div class="nc-name">Calorias</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-cals" value="3000" inputmode="numeric"> kcal</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-cals">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-cals">3000</div>
+        <div class="nc-unit">kcal</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-cals" style="width:0%;background:var(--grn)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="100">100</button>
+        <button class="qbtn" data-v="200">200</button>
+        <button class="qbtn" data-v="300">300</button>
+        <button class="qbtn" data-v="500">500</button>
+        <button class="qbtn" data-v="700">700</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-cals" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-cals">+</button>
+      </div>
+    </div>
+
+    <!-- PROTEÍNA -->
+    <div class="nc prot card" id="nc-prot">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">🥩</div><div class="nc-name">Proteína</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-prot" value="189" inputmode="numeric"> g</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-prot">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-prot">189</div>
+        <div class="nc-unit">g</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-prot" style="width:0%;background:var(--prot)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="10">10g</button>
+        <button class="qbtn" data-v="20">20g</button>
+        <button class="qbtn" data-v="30">30g</button>
+        <button class="qbtn" data-v="40">40g</button>
+        <button class="qbtn" data-v="50">50g</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-prot" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-prot">+</button>
+      </div>
+    </div>
+
+    <!-- CARBOIDRATO -->
+    <div class="nc carb card" id="nc-carb">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">🍚</div><div class="nc-name">Carboidrato</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-carb" value="350" inputmode="numeric"> g</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-carb">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-carb">350</div>
+        <div class="nc-unit">g</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-carb" style="width:0%;background:var(--carb)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="20">20g</button>
+        <button class="qbtn" data-v="30">30g</button>
+        <button class="qbtn" data-v="50">50g</button>
+        <button class="qbtn" data-v="75">75g</button>
+        <button class="qbtn" data-v="100">100g</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-carb" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-carb">+</button>
+      </div>
+    </div>
+
+    <!-- GORDURA -->
+    <div class="nc gord card" id="nc-gord">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">🥑</div><div class="nc-name">Gordura</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-gord" value="80" inputmode="numeric"> g</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-gord">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-gord">80</div>
+        <div class="nc-unit">g</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-gord" style="width:0%;background:var(--gord)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="5">5g</button>
+        <button class="qbtn" data-v="10">10g</button>
+        <button class="qbtn" data-v="15">15g</button>
+        <button class="qbtn" data-v="20">20g</button>
+        <button class="qbtn" data-v="30">30g</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-gord" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-gord">+</button>
+      </div>
+    </div>
+
+    <!-- HISTÓRICO 7 DIAS -->
+    <div class="card" id="card-hist">
+      <div class="lbl">Histórico — 7 dias</div>
+      <div class="hist-bars" id="hist-bars"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+        <div style="display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--agua)"></div>Água</div>
+        <div style="display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--grn)"></div>Calorias</div>
+        <div style="display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--prot)"></div>Proteína</div>
+      </div>
+    </div>
+
+    <!-- ANÁLISE IA -->
+    <div class="card">
+      <div class="ai-hdr">
+        <div class="ai-icon">⚡</div>
+        <div><div class="ai-titulo">Análise Nutricional</div><div class="ai-fonte">IA · Dados reais · Ciência</div></div>
+      </div>
+      <div class="ai-body" id="ai-body">
+        <span style="color:var(--t3);font-size:0.75rem;">Adicione seus dados do dia e clique em Analisar para receber feedback personalizado.</span>
+      </div>
+      <button class="btn-ai" id="btn-ai">⚡ Analisar Meu Dia</button>
+    </div>
+
   </div>
 
-  <div class="scroll-content">
-
-    <div class="card" id="card-agua">
-      <div class="card-header">
-        <span class="title">💧 ÁGUA</span>
-        <span class="meta-container">Meta: <input type="number" class="meta-input" value="4000"></span>
-      </div>
-      <div class="stats">
-        <span class="current-value green">0</span> / <span class="target-display">4000</span> ml
-      </div>
-      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
-      <div class="controls">
-        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
-        <button class="add-btn">OK</button>
-      </div>
-    </div>
-
-    <div class="card" id="card-calorias">
-      <div class="card-header">
-        <span class="title">🔥 CALORIAS</span>
-        <span class="meta-container">Meta: <input type="number" class="meta-input" value="3000"></span>
-      </div>
-      <div class="stats">
-        <span class="current-value green">0</span> / <span class="target-display">3000</span> kcal
-      </div>
-      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
-      <div class="controls">
-        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
-        <button class="add-btn">OK</button>
-      </div>
-    </div>
-
-    <div class="card" id="card-proteina">
-      <div class="card-header">
-        <span class="title">🥩 PROTEÍNA</span>
-        <span class="meta-container">Meta: <input type="number" class="meta-input" value="189"></span>
-      </div>
-      <div class="stats">
-        <span class="current-value green">0</span> / <span class="target-display">189</span> g
-      </div>
-      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
-      <div class="controls">
-        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
-        <button class="add-btn">OK</button>
-      </div>
-    </div>
-
-    <div class="card" id="card-carboidrato">
-      <div class="card-header">
-        <span class="title">🍞 CARBO</span>
-        <span class="meta-container">Meta: <input type="number" class="meta-input" value="350"></span>
-      </div>
-      <div class="stats">
-        <span class="current-value green">0</span> / <span class="target-display">350</span> g
-      </div>
-      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
-      <div class="controls">
-        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
-        <button class="add-btn">OK</button>
-      </div>
-    </div>
-
-    <div class="card" id="card-gordura">
-      <div class="card-header">
-        <span class="title">🥑 GORDURA</span>
-        <span class="meta-container">Meta: <input type="number" class="meta-input" value="80"></span>
-      </div>
-      <div class="stats">
-        <span class="current-value green">0</span> / <span class="target-display">80</span> g
-      </div>
-      <div class="progress-bg"><div class="progress-fill green" style="width:0%"></div></div>
-      <div class="controls">
-        <input type="number" class="add-input" placeholder="Qtd" inputmode="numeric">
-        <button class="add-btn">OK</button>
-      </div>
-    </div>
-
+  <!-- FOOTER -->
+  <div class="ftr">
+    <button class="btn-reset" id="btn-reset">↺ Reset do Dia</button>
+    <button class="btn-hist" id="btn-hist">📊</button>
   </div>
-
-  <div class="footer">
-    <button class="reset-btn" id="btn-reset">
-      <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" width="16" height="16" style="vertical-align:middle;margin-right:6px;margin-bottom:2px"><path d="M57 5 L18 55 H46 L39 115 L82 65 H54 Z" fill="#ef4444"/></svg>
-      RESET
-    </button>
-  </div>
-
 </div>
 
 <script>
-  // ── Splash screen ─────────────────────────────────────
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      document.getElementById('splash').classList.add('hide');
-      setTimeout(() => document.getElementById('splash').remove(), 600);
-    }, 1600);
-  });
+// ══ PARTÍCULAS MOLECULARES ════════════════════════════
+function initParticles(){
+  const canvas=document.getElementById('bg-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W,H;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
 
-  // ── Cards ─────────────────────────────────────────────
-  function setupCard(cardId) {
-    const card = document.getElementById(cardId);
-    const metaInput = card.querySelector('.meta-input');
-    const targetDisplay = card.querySelector('.target-display');
-    const currentValueDisplay = card.querySelector('.current-value');
-    const progressFill = card.querySelector('.progress-fill');
-    const addInput = card.querySelector('.add-input');
-    const addBtn = card.querySelector('.add-btn');
-
-    let current = parseInt(localStorage.getItem(cardId + '_manual_current')) || 0;
-    const savedMeta = localStorage.getItem(cardId + '_manual_target');
-    if (savedMeta) metaInput.value = savedMeta;
-
-    function updateVisuals() {
-      let target = parseInt(metaInput.value);
-      if (isNaN(target) || target <= 0) target = 1;
-
-      targetDisplay.textContent = target;
-      currentValueDisplay.textContent = current;
-      localStorage.setItem(cardId + '_manual_current', current);
-      if (!isNaN(parseInt(metaInput.value))) {
-        localStorage.setItem(cardId + '_manual_target', target);
-      }
-
-      progressFill.style.width = Math.min((current / target) * 100, 100) + '%';
-
-      if (current > target && target > 1) {
-        currentValueDisplay.className = 'current-value red';
-        progressFill.className = 'progress-fill red';
-      } else {
-        currentValueDisplay.className = 'current-value green';
-        progressFill.className = 'progress-fill green';
-      }
-    }
-
-    metaInput.addEventListener('input', updateVisuals);
-    metaInput.addEventListener('blur', () => {
-      if (!metaInput.value || parseInt(metaInput.value) <= 0) {
-        metaInput.value = "100";
-        updateVisuals();
-      }
-    });
-
-    addBtn.addEventListener('click', () => {
-      const v = parseInt(addInput.value);
-      if (!isNaN(v) && v > 0) { current += v; addInput.value = ''; updateVisuals(); }
-    });
-
-    card.resetData = () => { current = 0; updateVisuals(); };
-    updateVisuals();
-  }
-
-  ['card-agua','card-calorias','card-proteina','card-carboidrato','card-gordura']
-    .forEach(setupCard);
-
-  document.getElementById('btn-reset').addEventListener('click', () => {
-    if (confirm("Deseja resetar todos os marcadores agora?")) {
-      ['card-agua','card-calorias','card-proteina','card-carboidrato','card-gordura']
-        .forEach(id => document.getElementById(id).resetData());
-    }
-  });
-
-  // ── Tela cheia ────────────────────────────────────────
-  const totalApp = document.getElementById('main-app');
-  const autoFullscreen = () => {
-    if (!document.fullscreenElement)
-      totalApp.requestFullscreen().catch(() => {});
-    document.removeEventListener('click', autoFullscreen);
-    document.removeEventListener('touchstart', autoFullscreen);
-  };
-  document.addEventListener('click', autoFullscreen);
-  document.addEventListener('touchstart', autoFullscreen);
-
-  document.getElementById('title-fs').addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!document.fullscreenElement)
-      totalApp.requestFullscreen().catch(() => {});
-    else
-      document.exitFullscreen();
-  });
-
-  // ── Service Worker ────────────────────────────────────
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+  // Moléculas — esferas com ligações
+  const mols=[];
+  const N=16;
+  for(let i=0;i<N;i++){
+    mols.push({
+      x:Math.random()*1400,y:Math.random()*2000,
+      vx:(Math.random()-0.5)*0.14,vy:(Math.random()-0.5)*0.12,
+      r:Math.random()*2+1.2,
+      pulse:Math.random()*Math.PI*2,
+      ps:0.008+Math.random()*0.012,
+      a:0.04+Math.random()*0.06,
+      cor:['#4ade80','#38bdf8','#a78bfa','#fb923c','#fbbf24'][Math.floor(Math.random()*5)],
     });
   }
 
-  // ── Banner de instalação (Android Chrome) ─────────────
-  let deferredPrompt = null;
-  const banner = document.getElementById('install-banner');
+  // Obtém rects dos cards para evitar desenhar por cima
+  function getCardRects(){
+    const rects=[];
+    document.querySelectorAll('.card,.nc,.hdr,.ftr').forEach(el=>{
+      const r=el.getBoundingClientRect();
+      if(r.width>0&&r.height>0)rects.push(r);
+    });
+    return rects;
+  }
+  function inCard(px,py,rects){
+    for(const r of rects){if(px>r.left-16&&px<r.right+16&&py>r.top-16&&py<r.bottom+16)return true;}
+    return false;
+  }
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    banner.classList.add('visible');
-  });
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const rects=getCardRects();
+    mols.forEach(m=>{
+      m.x+=m.vx;m.y+=m.vy;m.pulse+=m.ps;
+      if(m.x<-30)m.x=W+30;if(m.x>W+30)m.x=-30;
+      if(m.y<-30)m.y=H+30;if(m.y>H+30)m.y=-30;
+      if(inCard(m.x,m.y,rects))return;
+      const alpha=m.a*(0.6+Math.sin(m.pulse)*0.4);
+      // Núcleo
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);
+      ctx.fillStyle=m.cor+Math.floor(alpha*255).toString(16).padStart(2,'0');
+      ctx.fill();
+      // Halo
+      const grd=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,m.r*4);
+      grd.addColorStop(0,m.cor+Math.floor(alpha*0.5*255).toString(16).padStart(2,'0'));
+      grd.addColorStop(1,m.cor+'00');
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r*4,0,Math.PI*2);
+      ctx.fillStyle=grd;ctx.fill();
+      // Ligações com moléculas próximas
+      mols.forEach(m2=>{
+        if(m===m2)return;
+        const dx=m2.x-m.x,dy=m2.y-m.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<80&&!inCard(m2.x,m2.y,rects)){
+          const la=alpha*(1-dist/80)*0.4;
+          ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(m2.x,m2.y);
+          ctx.strokeStyle=m.cor+Math.floor(la*255).toString(16).padStart(2,'0');
+          ctx.lineWidth=0.5;ctx.stroke();
+        }
+      });
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
 
-  document.getElementById('btn-install-yes').addEventListener('click', async () => {
-    banner.classList.remove('visible');
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
+// ══ ESTADO ════════════════════════════════════════════
+const NUTS=['agua','cals','prot','carb','gord'];
+const DEFAULTS={agua:4000,cals:3000,prot:189,carb:350,gord:80};
+const UNITS={agua:'ml',cals:'kcal',prot:'g',carb:'g',gord:'g'};
+const CORS={agua:'var(--agua)',cals:'var(--grn)',prot:'var(--prot)',carb:'var(--carb)',gord:'var(--gord)'};
+
+// Reset 100% manual — Eliezer trabalha escala 2x2 das 18h
+function getToday(){return new Date().toISOString().slice(0,10);}
+function saveHistoryDay(date){
+  try{
+    const hist=JSON.parse(localStorage.getItem('fuel_hist')||'{}');
+    const day={};
+    NUTS.forEach(n=>{day[n]=parseInt(localStorage.getItem('fuel_cur_'+n))||0;day[n+'_meta']=parseInt(localStorage.getItem('fuel_meta_'+n))||DEFAULTS[n];});
+    hist[date]=day;
+    // Mantém só os últimos 30 dias
+    const keys=Object.keys(hist).sort().slice(-30);
+    const trimmed={};keys.forEach(k=>{trimmed[k]=hist[k];});
+    localStorage.setItem('fuel_hist',JSON.stringify(trimmed));
+  }catch(e){}
+}
+function loadHistory(){try{return JSON.parse(localStorage.getItem('fuel_hist')||'{}');}catch(e){return{};}}
+
+// ══ SETUP NUTRIENTE ═══════════════════════════════════
+function getVal(n){return parseInt(localStorage.getItem('fuel_cur_'+n))||0;}
+function getMeta(n){return parseInt(localStorage.getItem('fuel_meta_'+n))||DEFAULTS[n];}
+function setVal(n,v){localStorage.setItem('fuel_cur_'+n,v);}
+function setMeta(n,v){localStorage.setItem('fuel_meta_'+n,v);}
+
+function updateNut(n){
+  const cur=getVal(n);
+  const meta=getMeta(n);
+  const pct=Math.min(cur/meta,1)*100;
+  // Card nutriente
+  const elCur=document.getElementById('cur-'+n);
+  if(elCur){
+    elCur.textContent=cur;
+    elCur.classList.toggle('over',cur>meta);
+  }
+  const elTgt=document.getElementById('tgt-'+n);if(elTgt)elTgt.textContent=meta;
+  const elMeta=document.getElementById('meta-'+n);if(elMeta)elMeta.value=meta;
+  // Cor da barra conforme progresso
+  const prg=document.getElementById('prg-'+n);
+  if(prg){
+    prg.style.width=pct+'%';
+    if(cur>meta)prg.style.background='var(--red)';
+    else if(pct>=85)prg.style.background='var(--yel)';
+    else prg.style.background=CORS[n];
+  }
+  // Resumo
+  const rEl=document.getElementById('r-'+n);if(rEl)rEl.textContent=cur;
+  const rMeta=document.getElementById('r-'+n+'-meta');if(rMeta)rMeta.textContent=meta;
+  const rBar=document.getElementById('r-'+n+'-bar');if(rBar)rBar.style.width=pct+'%';
+  const rPct=document.getElementById('r-'+n+'-pct');if(rPct)rPct.textContent=Math.round(pct)+'%';
+}
+
+function setupNut(n){
+  // Botão adicionar
+  const btn=document.getElementById('btn-'+n);
+  const inp=document.getElementById('inp-'+n);
+  if(btn&&inp){
+    btn.addEventListener('click',()=>{
+      const v=parseInt(inp.value);
+      if(!isNaN(v)&&v>0){
+        setVal(n,getVal(n)+v);
+        inp.value='';
+        updateNut(n);
+        animatePulse('cur-'+n);
+      }
+    });
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){btn.click();}});
+  }
+  // Atalhos rápidos
+  const card=document.getElementById('nc-'+n);
+  if(card){
+    card.querySelectorAll('.qbtn').forEach(q=>{
+      q.addEventListener('click',()=>{
+        const v=parseInt(q.dataset.v);
+        if(!isNaN(v)){setVal(n,getVal(n)+v);updateNut(n);animatePulse('cur-'+n);}
+      });
+    });
+  }
+  // Meta editável
+  const metaInput=document.getElementById('meta-'+n);
+  if(metaInput){
+    metaInput.addEventListener('input',()=>{
+      const v=parseInt(metaInput.value);
+      if(!isNaN(v)&&v>0){setMeta(n,v);updateNut(n);}
+    });
+  }
+  updateNut(n);
+}
+
+// ══ ANIMAÇÃO DE PULSO AO ADICIONAR ═══════════════════
+function animatePulse(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.style.transition='transform 0.15s ease';
+  el.style.transform='scale(1.15)';
+  setTimeout(()=>{el.style.transform='scale(1)';},150);
+}
+
+// ══ STREAK ════════════════════════════════════════════
+function calcStreak(){
+  const hist=loadHistory();
+  const today=getToday();
+  let streak=0;
+  // Checa dias consecutivos terminados
+  for(let i=1;i<=365;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const k=d.toISOString().slice(0,10);
+    const day=hist[k];
+    if(!day)break;
+    // Dia "completo" = pelo menos 3 metas atingidas
+    const completed=NUTS.filter(n=>day[n]>=(day[n+'_meta']||DEFAULTS[n])*0.8).length;
+    if(completed>=3)streak++;else break;
+  }
+  const el=document.getElementById('hdr-streak');
+  if(el)el.textContent='🔥 '+streak;
+  return streak;
+}
+
+// ══ HISTÓRICO 7 DIAS ══════════════════════════════════
+function renderHist(){
+  const bars=document.getElementById('hist-bars');
+  if(!bars)return;
+  bars.innerHTML='';
+  const hist=loadHistory();
+  const today=getToday();
+  const days=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10));}
+  days.forEach(date=>{
+    const day=hist[date]||null;
+    const isToday=date===today;
+    const wrap=document.createElement('div');wrap.className='hist-bar-wrap';
+    // Empilha 3 barras: água, calorias, proteína
+    const bg=document.createElement('div');bg.className='hist-bar-bg';
+    bg.style.position='relative';bg.style.flexDirection='column';bg.style.justifyContent='flex-end';
+    if(day){
+      const aguaPct=Math.min(day.agua/(day.agua_meta||DEFAULTS.agua),1);
+      const calsPct=Math.min(day.cals/(day.cals_meta||DEFAULTS.cals),1);
+      const protPct=Math.min(day.prot/(day.prot_meta||DEFAULTS.prot),1);
+      const avg=(aguaPct+calsPct+protPct)/3;
+      const fill=document.createElement('div');
+      fill.className='hist-bar-fill';
+      fill.style.height=Math.round(avg*100)+'%';
+      fill.style.background=avg>=0.8?'var(--grn)':avg>=0.5?'var(--yel)':'var(--red)';
+      bg.appendChild(fill);
     }
+    const lbl=document.createElement('div');
+    lbl.className='hist-bar-lbl'+(isToday?' today':'');
+    const d=new Date(date+'T12:00:00');
+    lbl.textContent=['D','S','T','Q','Q','S','S'][d.getDay()];
+    wrap.appendChild(bg);wrap.appendChild(lbl);
+    bars.appendChild(wrap);
   });
+}
 
-  document.getElementById('btn-install-no').addEventListener('click', () => {
-    banner.classList.remove('visible');
-  });
+// ══ ANÁLISE IA ════════════════════════════════════════
+async function generateAI(){
+  const body=document.getElementById('ai-body');
+  if(!body)return;
+  body.innerHTML='<div class="ai-load"><div class="ai-dots"><span></span><span></span><span></span></div> Consultando literatura científica especializada...</div>';
+  const vals={};const metas={};
+  NUTS.forEach(n=>{vals[n]=getVal(n);metas[n]=getMeta(n);});
+  const pcts={};NUTS.forEach(n=>{pcts[n]=Math.round(vals[n]/metas[n]*100);});
+  const hist=loadHistory();
+  const histKeys=Object.keys(hist).sort().slice(-7);
+  const avgCals=histKeys.length?Math.round(histKeys.reduce((a,k)=>a+(hist[k].cals||0),0)/histKeys.length):0;
+  const avgProt=histKeys.length?Math.round(histKeys.reduce((a,k)=>a+(hist[k].prot||0),0)/histKeys.length):0;
 
-  window.addEventListener('appinstalled', () => banner.classList.remove('visible'));
+  const prompt=`Você é o melhor nutricionista esportivo do mundo, especialista em fisiologia do esporte e nutrição para trabalhadores em turnos com atividade física pesada. Você tem acesso às pesquisas mais recentes e relevantes do planeta.
+
+Escreva um parágrafo único de 6-7 linhas em português brasileiro. Tom: direto, científico de alto nível e motivador. Sem listas, sem títulos, sem markdown. Cite estudos reais quando relevante (Journal of Strength and Conditioning Research, Sports Medicine, International Journal of Sport Nutrition and Exercise Metabolism, NSCA, Journal of Applied Physiology, Nutrients 2024-2025).
+
+CONTEXTO DO ATLETA:
+- Trabalhador de turno noturno — escala 2 dias trabalha / 2 dias folga
+- Turno das 18h — trabalho físico PESADO
+- Ciclo circadiano invertido — sono diurno
+- Alta demanda metabólica e muscular no turno
+
+DADOS DESTE CICLO:
+- Água: ${vals.agua}ml / ${metas.agua}ml (${pcts.agua}%)
+- Calorias: ${vals.cals}kcal / ${metas.cals}kcal (${pcts.cals}%)
+- Proteína: ${vals.prot}g / ${metas.prot}g (${pcts.prot}%)
+- Carboidrato: ${vals.carb}g / ${metas.carb}g (${pcts.carb}%)
+- Gordura: ${vals.gord}g / ${metas.gord}g (${pcts.gord}%)
+${avgCals?`Média calórica dos últimos ${histKeys.length} registros: ${avgCals}kcal | Proteína média: ${avgProt}g`:'Primeiro registro.'}
+
+Analise os dados considerando: impacto do trabalho noturno pesado no metabolismo proteico e recuperação muscular, hidratação em trabalho físico intenso, timing de carboidratos para energia no turno, qualidade do sono diurno afetado pela nutrição. Use os números reais. Termine com 1 orientação prática de alto impacto para o próximo turno.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    const text=data.content?.map(c=>c.text||'').join('').trim();
+    if(text){
+      body.style.opacity='0';body.style.transition='opacity 0.5s';
+      setTimeout(()=>{body.textContent=text;body.style.opacity='1';},400);
+    } else body.textContent='Dados registrados. Continue adicionando para análises mais precisas.';
+  }catch(e){body.textContent='Análise indisponível no momento. Seus dados foram salvos.';}
+}
+
+// ══ RESET ═════════════════════════════════════════════
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  if(!confirm('Resetar todos os dados de hoje?'))return;
+  saveHistoryDay(getToday());
+  NUTS.forEach(n=>{setVal(n,0);updateNut(n);});
+  renderHist();
+});
+
+// ══ DATA ══════════════════════════════════════════════
+function updateDate(){
+  const el=document.getElementById('hdr-date');
+  if(el)el.textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase();
+}
+
+// ══ TELA CHEIA ════════════════════════════════════════
+const appEl=document.getElementById('main-app');
+const goFull=()=>{if(!document.fullscreenElement)appEl.requestFullscreen().catch(()=>{});document.removeEventListener('click',goFull);document.removeEventListener('touchstart',goFull);};
+document.addEventListener('click',goFull);document.addEventListener('touchstart',goFull);
+
+// ══ SERVICE WORKER ════════════════════════════════════
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+
+// ══ INSTALL BANNER ════════════════════════════════════
+let dPrm=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dPrm=e;document.getElementById('ib').classList.add('show');});
+document.getElementById('ib-y').addEventListener('click',async()=>{document.getElementById('ib').classList.remove('show');if(dPrm){dPrm.prompt();await dPrm.userChoice;dPrm=null;}});
+document.getElementById('ib-n').addEventListener('click',()=>document.getElementById('ib').classList.remove('show'));
+window.addEventListener('appinstalled',()=>document.getElementById('ib').classList.remove('show'));
+
+// ══ SPLASH ════════════════════════════════════════════
+window.addEventListener('load',()=>{setTimeout(()=>{document.getElementById('splash').classList.add('hide');setTimeout(()=>{const s=document.getElementById('splash');if(s)s.remove();},1000);},2000);});
+
+// ══ ANÁLISE IA BOTÃO ══════════════════════════════════
+document.getElementById('btn-ai').addEventListener('click',generateAI);
+
+// ══ INIT ══════════════════════════════════════════════
+updateDate();setInterval(updateDate,60000);
+NUTS.forEach(n=>setupNut(n));
+calcStreak();
+renderHist();
+initParticles();
 </script>
 </body>
 </html>
