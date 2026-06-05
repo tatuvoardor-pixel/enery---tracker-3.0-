@@ -694,44 +694,44 @@ function generateAI(){
 
     // Proteína
     if(pcts.prot>=100){
-      txt+='Proteína em dia: '+vals.prot+'g ('+pcts.prot+'% da meta). Com 63kg de massa muscular sob stress mecânico diário de toneladas, você está protegendo o anabolismo. NSCA e ISSN (2024) confirmam: 2-2,4g/kg/dia previne catabolismo muscular mesmo após turnos de 12h de alta demanda mecânica. O estudo PROPENSITy (2024 — Adelaide, Austrália) demonstrou que 30g de proteína antes da refeição principal melhora metabolismo glicídico em trabalhadores noturnos. Distribua em refeições de 40-50g para maximizar a síntese proteica via mecanismo mTORC1 — limitado a ~40g por refeição. ';
+      txt+='✅ Proteína: '+vals.prot+'g ('+pcts.prot+'%). Anabolismo protegido. → Refeições de 40-50g max. ';
     } else if(pcts.prot>=70){
-      txt+='Proteína moderada: '+vals.prot+'g de '+metas.prot+'g ('+pcts.prot+'%). Para seu volume de trabalho físico, este nível ainda suporta recuperação muscular básica. JSCR 2024 documenta que trabalhadores braçais em déficit proteico crônico perdem até 0,3kg de massa magra por semana mesmo com atividade intensa. Priorize uma refeição extra com 30-40g de proteína completa. ';
+      txt+='🟡 Proteína: '+vals.prot+'g ('+pcts.prot+'%). → Adicione 30-40g para fechar a meta. ';
     } else {
-      txt+='Alerta proteico: apenas '+vals.prot+'g ('+pcts.prot+'% da meta). Para quem carrega toneladas por turno, este déficit ativa proteólise muscular. O cortisol noturno elevado suprime mTOR e inibe a beta-oxidação muscular — sem proteína adequada, catabolismo prevalece sobre anabolismo. A chrononutrition para turno noturno recomenda proteína no pós-turno e carboidratos complexos antes do trabalho (J Applied Physiology, 2024). Meta mínima: '+metas.prot+'g. ';
+      txt+='🔴 Proteína: '+vals.prot+'g ('+pcts.prot+'%). Risco de catabolismo. → Meta: '+metas.prot+'g hoje. ';
     }
 
     // Hidratação
     if(pcts.agua>=90){
-      txt+='Hidratação excelente: '+vals.agua+'ml ('+pcts.agua+'%). Trabalho físico noturno aumenta perdas hídricas em 20-30% pela alteração circadiana dos hormônios antidiuréticos — mecanismo circadiano alterado. Você está compensando corretamente. ';
+      txt+='✅ Água: '+vals.agua+'ml ('+pcts.agua+'%). Hidratação ótima. ';
     } else if(pcts.agua>=60){
-      txt+='Hidratação parcial: '+vals.agua+'ml. Estudo medRxiv 2025 com trabalhadores noturnos: desidratação de 2% do peso reduz força muscular em 8% e cognição em 15%. Para seu peso, mantenha acima de 3.500ml durante o turno. ';
+      txt+='🟡 Água: '+vals.agua+'ml. → Falta líquido. Mantenha acima de 3.500ml. ';
     } else {
-      txt+='Hidratação baixa: '+vals.agua+'ml — risco real. Desidratação crônica em trabalhadores físicos aumenta risco de lesões musculotendinosas em 40% (Sports Medicine, 2024). Trabalhadores noturnos têm alteração nos hormônios antidiuréticos por inversão circadiana — precisam de 15-20% mais líquido do que trabalhadores diurnos para mesma carga física (Journal Occupational Health, 2025). Estratégia: 500ml antes do turno, 250ml a cada hora ativa. ';
+      txt+='🔴 Água: '+vals.agua+'ml — risco de lesão. → 500ml antes do turno, 250ml/hora. ';
     }
 
     // Calorias
     if(pcts.cals<70){
-      txt+='Déficit calórico importante: '+vals.cals+'kcal ('+pcts.cals+'%). Para quem carrega paletes de 25kg por 12h, este déficit afeta potência muscular e aumenta risco de lesões por fadiga estrutural. Glicogênio é o combustível primário do trabalho braçal intenso — mantenha carboidrato adequado. ';
+      txt+='⚠️ Calorias: '+vals.cals+'kcal ('+pcts.cals+'%). Déficit. → Carboidrato antes do turno. ';
     } else if(pcts.cals>130){
-      txt+='Superávit calórico: '+vals.cals+'kcal ('+pcts.cals+'%). Com a carga de trabalho físico, este superávit pode ser direcionado para hipertrofia se a proteína estiver em dia. Prefira carbo complexo no início do turno e proteína no pós-turno. ';
+      txt+='✅ Calorias: '+vals.cals+'kcal ('+pcts.cals+'%). Superávit. → Proteína em dia = hipertrofia. ';
     }
 
     // Carboidrato
     if(pcts.carb<60){
-      txt+='Carboidrato abaixo do ideal ('+pcts.carb+'%). Para trabalho braçal intenso, glicogênio muscular é o combustível primário — déficit compromete força. Timing: 40-60g de carbo complexo 1-2h antes do turno otimiza desempenho (IJSNEM, 2025). ';
+      txt+='🟡 Carbo: '+pcts.carb+'% da meta. → 40-60g complexo 1-2h antes do turno. ';
     }
 
     // Histórico
     if(avgCals>0&&histKeys.length>=3){
       if(avgProt<metas.prot*0.8){
-        txt+='Padrão histórico: média de '+avgProt+'g de proteína em '+histKeys.length+' registros — consistentemente abaixo da meta. Déficit proteico crônico é o principal fator de perda de massa muscular em trabalhadores físicos acima de 35 anos. ';
+        txt+='📊 Média histórica: '+avgProt+'g proteína. Abaixo da meta. → Prioridade: aumentar proteína. ';
       }
     }
 
     // Recomendação
     if(pcts.prot<80){
-      txt+='Recomendação de alto impacto: defina horário fixo para sua maior refeição proteica — 1-2h antes de dormir. Caseína e proteínas lentas reduzem catabolismo noturno em 30-40% (Nutrients, 2025). Chrononutrition específica para turno noturno: alimentos de baixo índice glicêmico durante o turno e proteína completa no pós-turno são as duas intervenções de maior impacto documentadas para trabalhadores noturnos com alta demanda muscular (Sleep Medicine Reviews, 2025).';
+      txt+='→ Regra turno noturno: carbo baixo IG durante o trabalho + proteína no pós-turno.';
     } else if(pcts.agua<70){
       txt+='Recomendação: prepare 2 garrafas de 1L antes de cada turno. Hidratação proativa é mais eficaz que reativa — quando a sede aparece você já está em déficit de 1-1,5% do peso.';
     } else {
