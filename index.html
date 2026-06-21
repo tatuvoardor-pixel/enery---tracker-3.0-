@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <!-- FUEL © 2025 — Todos os direitos reservados -->
-<!-- Criado por: Eliezer Silva Giorni — Versão 1.1 -->
-<!-- Correções: Lilita One, letter-spacing:0, max-width:100vw, SVG polyline, SW domain, card café -->
+<!-- Criado por: Eliezer Silva Giorni — Versão 1.2 -->
+<!-- v1.1: Lilita One, letter-spacing:0, max-width:100vw, SVG polyline, SW domain, card café -->
+<!-- v1.2: Café em ml com seletor de tipo (mg/ml correto), limite EFSA 400mg/dia,
+     horário de dormir após café (Drake 2013, +6h), notificação push opcional,
+     timestamp última dose, citação científica real (EFSA 2015 + Drake 2013) -->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -14,7 +17,6 @@
 <meta name="theme-color" content="#09090b">
 <script>
 (function(){
-  /* FIX: SVG ícone com polyline — sem <path> complexo */
   var ico='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'+
     '<rect width="512" height="512" rx="112" fill="#09090b"/>'+
     '<polyline points="300,85 168,268 248,268 216,428 348,244 268,244 300,85" fill="none" stroke="#4ade80" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>'+
@@ -25,7 +27,6 @@
   var il=document.createElement('link');il.rel='apple-touch-icon';il.href=iUrl;document.head.appendChild(il);
 })();
 </script>
-<!-- FIX: Lilita One -->
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Oswald:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -38,29 +39,25 @@
   --prot:#a78bfa;--prot-d:#a78bfa12;--prot-m:#a78bfa40;
   --carb:#fb923c;--carb-d:#fb923c12;--carb-m:#fb923c40;
   --gord:#fbbf24;--gord-d:#fbbf2412;--gord-m:#fbbf2440;
-  /* CAFÉ */
   --cafe:#d97706;--cafe-d:#d9770612;--cafe-m:#d9770840;
 }
-/* FIX: letter-spacing:0 global */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;letter-spacing:0!important;}
-/* FIX: max-width:100vw */
 html,body{width:100%;max-width:100vw;height:100%;background:var(--bg);color:var(--tx);overflow:hidden;position:fixed;top:0;left:0;font-family:'Inter',sans-serif;}
 button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:inherit;cursor:pointer;outline:none;}
 #bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
 #splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;transition:opacity 0.9s ease;padding:0 30px;}
 #splash.hide{opacity:0;pointer-events:none;}
 #splash .sp-bolt{width:90px;height:90px;animation:spUp 0.8s ease forwards,boltPulse 2s 0.8s ease-in-out infinite;opacity:0;filter:drop-shadow(0 0 30px #4ade8088);}
-/* FIX: Lilita One */
 #splash .sp-name{font-family:'Lilita One',cursive;font-size:2.6rem;color:var(--grn);animation:spUp 0.8s 0.15s ease forwards;opacity:0;text-align:center;}
 #splash .sp-sub{font-family:'Roboto Mono',monospace;font-size:0.6rem;text-transform:uppercase;color:var(--t3);animation:spUp 0.8s 0.3s ease forwards;opacity:0;text-align:center;}
 @keyframes spUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 @keyframes boltPulse{0%,100%{filter:drop-shadow(0 0 20px #4ade8066);}50%{filter:drop-shadow(0 0 50px #4ade80cc);}}
+@keyframes alertPulse{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,0.4);}50%{box-shadow:0 0 0 8px rgba(217,119,6,0);}}
 .app{display:flex;flex-direction:column;width:100vw;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);position:relative;z-index:10;}
 .hdr{padding:10px 12px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--bd);gap:6px;overflow:hidden;}
 .hlogo{display:flex;align-items:center;gap:7px;min-width:0;flex-shrink:0;}
 .hbolt{width:32px;height:32px;background:var(--bg);border:1.5px solid var(--grn);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--grn-d);flex-shrink:0;}
 .hbolt svg{width:16px;height:16px;filter:drop-shadow(0 0 4px var(--grn));}
-/* FIX: Lilita One */
 .hname{font-family:'Lilita One',cursive;font-size:1.1rem;color:var(--grn);white-space:nowrap;}
 .hdate{font-family:'Roboto Mono',monospace;font-size:0.52rem;color:var(--t3);white-space:nowrap;}
 .hstreak{display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--grn);background:var(--grn-d);border:1px solid var(--grn-m);border-radius:6px;padding:4px 8px;flex-shrink:0;}
@@ -74,7 +71,6 @@ button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:
 .resumo-item.carb{border-color:var(--carb-m);background:var(--carb-d);}
 .resumo-item.gord{border-color:var(--gord-m);background:var(--gord-d);}
 .resumo-item.cafe{border-color:var(--cafe-m);background:var(--cafe-d);}
-/* FIX: Lilita One */
 .resumo-val{font-family:'Lilita One',cursive;font-size:1.6rem;line-height:1;}
 .resumo-item.agua .resumo-val{color:var(--agua);}
 .resumo-item.cals .resumo-val{color:var(--grn);}
@@ -116,7 +112,6 @@ button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:
 .nc.gord .nc-name{color:var(--gord);}
 .nc.cafe .nc-name{color:var(--cafe);}
 .nc-meta{display:flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);flex-shrink:0;}
-/* FIX: Lilita One */
 .nc-meta-input{background:transparent;border:none;border-bottom:1px dashed var(--bd);color:var(--tx);font-family:'Lilita One',cursive;font-size:0.95rem;width:44px;text-align:center;outline:none;padding:0;-webkit-appearance:none;appearance:none;}
 .nc.agua .nc-meta-input:focus{border-bottom-color:var(--agua);}
 .nc.cals .nc-meta-input:focus{border-bottom-color:var(--grn);}
@@ -126,7 +121,6 @@ button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:
 .nc.cafe .nc-meta-input:focus{border-bottom-color:var(--cafe);}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;}
 .nc-vals{display:flex;align-items:baseline;gap:6px;}
-/* FIX: Lilita One */
 .nc-cur{font-family:'Lilita One',cursive;font-size:2.4rem;line-height:1;transition:color 0.4s;}
 .nc.agua .nc-cur{color:var(--agua);}
 .nc.cals .nc-cur{color:var(--grn);}
@@ -164,7 +158,34 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .nc.carb .nc-add-btn{background:var(--carb);color:#000;}
 .nc.gord .nc-add-btn{background:var(--gord);color:#000;}
 .nc.cafe .nc-add-btn{background:var(--cafe);color:#000;}
+
+/* v1.2 — Café: seletor de tipo, sleep window, notificação */
+/* v1.2.1: estilos cafe-tipos removidos — V60 fixo */
+.cafe-mg-painel{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.cafe-mg-row{display:flex;justify-content:space-between;align-items:baseline;}
+.cafe-mg-lbl{font-family:'Roboto Mono',monospace;font-size:0.55rem;text-transform:uppercase;color:var(--t3);}
+.cafe-mg-val{font-family:'Lilita One',cursive;font-size:1.3rem;line-height:1;color:var(--cafe);}
+.cafe-mg-val.warn{color:var(--yel);}
+.cafe-mg-val.over{color:var(--red);}
+.cafe-mg-meta{font-family:'Roboto Mono',monospace;font-size:0.7rem;color:var(--t3);}
+.cafe-mg-fonte{font-family:'Roboto Mono',monospace;font-size:0.5rem;color:var(--t3);font-style:italic;}
+.cafe-sleep{background:var(--s2);border:1px solid var(--cafe-m);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;}
+.cafe-sleep.alert{animation:alertPulse 2s ease-in-out infinite;}
+.cafe-sleep-hdr{display:flex;justify-content:space-between;align-items:center;}
+.cafe-sleep-lbl{font-family:'Roboto Mono',monospace;font-size:0.55rem;text-transform:uppercase;color:var(--cafe);font-weight:700;}
+.cafe-sleep-icon{font-size:1.1rem;}
+.cafe-sleep-hora{font-family:'Lilita One',cursive;font-size:2rem;line-height:1;color:var(--cafe);}
+.cafe-sleep-info{font-family:'Roboto Mono',monospace;font-size:0.6rem;color:var(--t2);line-height:1.5;}
+.cafe-sleep-vazio{font-family:'Roboto Mono',monospace;font-size:0.6rem;color:var(--t3);font-style:italic;text-align:center;padding:8px 0;}
+.cafe-notif-btn{background:transparent;border:1px solid var(--cafe-m);color:var(--cafe);padding:8px 12px;border-radius:8px;font-family:'Roboto Mono',monospace;font-size:0.6rem;font-weight:700;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;}
+.cafe-notif-btn:active{background:var(--cafe-d);}
+.cafe-notif-btn.ativo{background:var(--cafe-d);color:var(--cafe);}
+.cafe-notif-btn.bloqueado{opacity:0.5;cursor:not-allowed;}
 .cafe-nota{font-family:'Roboto Mono',monospace;font-size:0.56rem;color:var(--t3);line-height:1.5;}
+.cafe-fonte{font-family:'Roboto Mono',monospace;font-size:0.5rem;color:var(--t3);font-style:italic;text-align:right;}
+.cafe-ult-dose{font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t2);}
+.cafe-ult-dose strong{color:var(--cafe);}
+
 .hist-bars{display:flex;align-items:flex-end;gap:5px;height:60px;}
 .hist-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
 .hist-bar-bg{width:100%;flex:1;background:var(--s2);border-radius:3px;overflow:hidden;display:flex;align-items:flex-end;}
@@ -200,9 +221,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 </style>
 </head>
 <body>
-
 <canvas id="bg-canvas"></canvas>
-
 <div id="splash">
   <svg class="sp-bolt" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
     <polyline points="60,8 32,55 50,55 44,112 72,65 54,65 60,8" fill="none" stroke="#4ade80" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -210,7 +229,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <div class="sp-name">FUEL</div>
   <div class="sp-sub">Combustível do Corpo</div>
 </div>
-
 <div class="app" id="main-app">
   <div class="hdr">
     <div class="hlogo">
@@ -226,10 +244,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <div class="hstreak" id="hdr-streak">🔥 0</div>
     </div>
   </div>
-
   <div class="scroll">
     <div id="ib"><span>📲 <strong>Instalar?</strong></span><button class="ib-y" id="ib-y">Instalar</button><button class="ib-n" id="ib-n">✕</button></div>
-
     <!-- RESUMO -->
     <div class="card" id="card-resumo">
       <div class="lbl">Resumo de hoje</div>
@@ -264,15 +280,15 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
           <div class="resumo-bar"><div class="resumo-bar-fill" id="r-gord-bar" style="width:0%"></div></div>
           <div class="resumo-pct" id="r-gord-pct">0%</div>
         </div>
+        <!-- v1.2: resumo do café agora mostra ML acumulado, com mg na meta -->
         <div class="resumo-item cafe">
           <div class="resumo-val" id="r-cafe">0</div>
-          <div class="resumo-meta">/ <span id="r-cafe-meta">3</span> xíc</div>
+          <div class="resumo-meta"><span id="r-cafe-mg">0</span>mg / <span id="r-cafe-meta">400</span>mg</div>
           <div class="resumo-bar"><div class="resumo-bar-fill" id="r-cafe-bar" style="width:0%"></div></div>
           <div class="resumo-pct" id="r-cafe-pct">0%</div>
         </div>
       </div>
     </div>
-
     <!-- ÁGUA -->
     <div class="nc agua card" id="nc-agua">
       <div class="nc-top">
@@ -298,7 +314,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <button class="nc-add-btn" id="btn-agua">+</button>
       </div>
     </div>
-
     <!-- CALORIAS -->
     <div class="nc cals card" id="nc-cals">
       <div class="nc-top">
@@ -324,7 +339,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <button class="nc-add-btn" id="btn-cals">+</button>
       </div>
     </div>
-
     <!-- PROTEÍNA -->
     <div class="nc prot card" id="nc-prot">
       <div class="nc-top">
@@ -350,7 +364,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <button class="nc-add-btn" id="btn-prot">+</button>
       </div>
     </div>
-
     <!-- CARBOIDRATO -->
     <div class="nc carb card" id="nc-carb">
       <div class="nc-top">
@@ -376,7 +389,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <button class="nc-add-btn" id="btn-carb">+</button>
       </div>
     </div>
-
     <!-- GORDURA -->
     <div class="nc gord card" id="nc-gord">
       <div class="nc-top">
@@ -403,29 +415,78 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       </div>
     </div>
 
-    <!-- CAFÉ — novo card -->
+    <!-- ════════════════════════════════════════════════════════
+         CAFÉ — v1.2 reformulado
+         Input em ml, seletor de tipo, cálculo mg correto,
+         limite EFSA 400mg/dia, horário pra dormir Drake 2013
+    ════════════════════════════════════════════════════════ -->
     <div class="nc cafe card" id="nc-cafe">
       <div class="nc-top">
-        <div class="nc-left"><div class="nc-icon">☕</div><div class="nc-name">Café</div></div>
-        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-cafe" value="3" inputmode="numeric"> xíc</div>
+        <div class="nc-left"><div class="nc-icon">☕</div><div class="nc-name">Café · em ml</div></div>
+        <div class="nc-meta">Limite: <input type="number" class="nc-meta-input" id="meta-cafe" value="400" inputmode="numeric"> mg</div>
       </div>
+
+      <!-- Painel mg acumulado vs limite EFSA -->
+      <div class="cafe-mg-painel">
+        <div class="cafe-mg-row">
+          <div>
+            <div class="cafe-mg-val" id="cafe-mg-val">0</div>
+            <div class="cafe-mg-lbl">mg cafeína hoje</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="cafe-mg-meta">de <span id="cafe-mg-meta">400</span>mg</div>
+            <div class="cafe-mg-lbl">limite EFSA</div>
+          </div>
+        </div>
+        <div class="nc-progbg"><div class="nc-progfill" id="cafe-mg-bar" style="width:0%;background:var(--cafe)"></div></div>
+        <div class="cafe-mg-fonte">EFSA 2015 · 400mg/dia seguro · cálculo: ml × 0,6 (V60 / filtrado especialidade)</div>
+      </div>
+
+      <!-- ml display tradicional -->
       <div class="nc-vals">
         <div class="nc-cur" id="cur-cafe">0</div>
         <div class="nc-sep">/</div>
-        <div class="nc-tgt" id="tgt-cafe">3</div>
-        <div class="nc-unit">xícaras</div>
+        <div class="nc-tgt" id="tgt-cafe">∞</div>
+        <div class="nc-unit">ml</div>
       </div>
-      <div id="cafe-cafeina" class="cafe-nota">≈ 0mg cafeína · meia-vida 5-6h</div>
-      <div class="nc-progbg"><div class="nc-progfill" id="prg-cafe" style="width:0%;background:var(--cafe)"></div></div>
+
+      <!-- Quick buttons em ml -->
       <div class="nc-quick">
-        <button class="qbtn" data-v="1">1 xíc</button>
-        <button class="qbtn" data-v="2">2 xíc</button>
+        <button class="qbtn" data-v="30">30ml</button>
+        <button class="qbtn" data-v="50">50ml</button>
+        <button class="qbtn" data-v="100">100ml</button>
+        <button class="qbtn" data-v="150">150ml</button>
+        <button class="qbtn" data-v="240">240ml</button>
       </div>
+
+      <!-- Input manual -->
       <div class="nc-add">
-        <input type="number" class="nc-add-input" id="inp-cafe" placeholder="Qtd" inputmode="numeric">
+        <input type="number" class="nc-add-input" id="inp-cafe" placeholder="ml" inputmode="numeric">
         <button class="nc-add-btn" id="btn-cafe">+</button>
       </div>
-      <div class="cafe-nota">Turno noturno: última dose mínimo 6h antes de dormir. Acima de 4 xíc/dia reduz qualidade do SWS (Sleep Medicine Reviews, 2024).</div>
+
+      <!-- Última dose registrada -->
+      <div class="cafe-ult-dose" id="cafe-ult-dose">Nenhuma dose registrada hoje.</div>
+
+      <!-- ════════════════════════════════════════
+           SLEEP WINDOW — quando pode dormir
+           Baseado em Drake et al. 2013 (+6h da última dose)
+      ════════════════════════════════════════ -->
+      <div class="cafe-sleep" id="cafe-sleep">
+        <div class="cafe-sleep-hdr">
+          <div class="cafe-sleep-lbl">🌙 Pode dormir após</div>
+          <div class="cafe-sleep-icon" id="cafe-sleep-icon">😴</div>
+        </div>
+        <div class="cafe-sleep-hora" id="cafe-sleep-hora">--:--</div>
+        <div class="cafe-sleep-info" id="cafe-sleep-info">Adicione café para calcular.</div>
+        <button class="cafe-notif-btn" id="cafe-notif-btn">🔔 Avisar quando puder dormir</button>
+      </div>
+
+      <div class="cafe-fonte">Drake CL et al. J Clin Sleep Med 2013 · cafeína 6h antes de dormir reduz sono em &gt;1h</div>
+
+      <div class="cafe-nota" id="cafe-nota-extra">
+        Turno noturno: planeje a última dose conforme sua hora de dormir + 6h. Acima de 4 xícaras/dia compromete SWS.
+      </div>
     </div>
 
     <!-- HISTÓRICO 7 DIAS -->
@@ -438,27 +499,23 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <div style="display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--prot)"></div>Proteína</div>
       </div>
     </div>
-
-    <!-- ANÁLISE IA -->
+    <!-- ANÁLISE -->
     <div class="card">
       <div class="ai-hdr">
         <div class="ai-icon">⚡</div>
-        <div><div class="ai-titulo">Análise Nutricional</div><div class="ai-fonte">IA · Dados reais · Ciência</div></div>
+        <div><div class="ai-titulo">Análise Nutricional</div><div class="ai-fonte">Dados reais · Ciência</div></div>
       </div>
       <div class="ai-body" id="ai-body">
         <span style="color:var(--t3);font-size:0.75rem;">Adicione seus dados do dia e clique em Analisar para receber feedback personalizado.</span>
       </div>
       <button class="btn-ai" id="btn-ai">Analisar Meu Dia</button>
     </div>
-
   </div>
-
   <div class="ftr">
     <button class="btn-reset" id="btn-reset">Reset do Dia</button>
     <button class="btn-hist" id="btn-hist">Histórico</button>
   </div>
 </div>
-
 <script>
 // ══ PARTÍCULAS ════════════════════════════════════════
 function initParticles(){
@@ -490,6 +547,7 @@ function initParticles(){
     return false;
   }
   function draw(){
+    if(document.hidden){requestAnimationFrame(draw);return;} // v1.2: pausa em background
     ctx.clearRect(0,0,W,H);
     var rects=getCardRects();
     mols.forEach(function(m){
@@ -520,18 +578,51 @@ function initParticles(){
   draw();
 }
 
+// ══════════════════════════════════════════════════════
+// v1.2.1 — V60 fixo (0,6 mg/ml) · simplicidade
+// Fonte: James Hoffmann · World Atlas of Coffee
+// ══════════════════════════════════════════════════════
+var V60_MG_POR_ML=0.6;
+
 // ══ ESTADO ════════════════════════════════════════════
 var NUTS=['agua','cals','prot','carb','gord','cafe'];
-var DEFAULTS={agua:4000,cals:3000,prot:189,carb:350,gord:80,cafe:3};
-var UNITS={agua:'ml',cals:'kcal',prot:'g',carb:'g',gord:'g',cafe:'xíc'};
+// v1.2: café default = sem meta de ml (limite é em mg)
+var DEFAULTS={agua:4000,cals:3000,prot:189,carb:350,gord:80,cafe:400};
+var UNITS={agua:'ml',cals:'kcal',prot:'g',carb:'g',gord:'g',cafe:'mg'};
 var CORS={agua:'var(--agua)',cals:'var(--grn)',prot:'var(--prot)',carb:'var(--carb)',gord:'var(--gord)',cafe:'var(--cafe)'};
 
 function getToday(){return new Date().toISOString().slice(0,10);}
+
+// v1.2.1: V60 fixo, sem seletor
+function getCafeConc(){return V60_MG_POR_ML;}
+
+// v1.2: ml acumulado e mg acumulado separados
+function getCafeMl(){return parseFloat(localStorage.getItem('fuel_cafe_ml'))||0;}
+function setCafeMl(v){localStorage.setItem('fuel_cafe_ml',v);}
+function getCafeMg(){return Math.round(getCafeMl()*getCafeConc());}
+
+// v1.2: timestamp última dose
+function getUltDose(){return parseInt(localStorage.getItem('fuel_cafe_ult'))||0;}
+function setUltDose(ts){localStorage.setItem('fuel_cafe_ult',ts);}
+
+// v1.2: estado da notificação
+function getNotifAgendada(){return parseInt(localStorage.getItem('fuel_cafe_notif'))||0;}
+function setNotifAgendada(ts){localStorage.setItem('fuel_cafe_notif',ts);}
+
 function saveHistoryDay(date){
   try{
     var hist=JSON.parse(localStorage.getItem('fuel_hist')||'{}');
     var day={};
-    NUTS.forEach(function(n){day[n]=parseInt(localStorage.getItem('fuel_cur_'+n))||0;day[n+'_meta']=parseInt(localStorage.getItem('fuel_meta_'+n))||DEFAULTS[n];});
+    NUTS.forEach(function(n){
+      if(n==='cafe'){
+        day.cafe=getCafeMg(); // armazena mg (não ml) no histórico
+        day.cafe_ml=getCafeMl();
+        day.cafe_meta=parseInt(localStorage.getItem('fuel_meta_cafe'))||DEFAULTS.cafe;
+      } else {
+        day[n]=parseInt(localStorage.getItem('fuel_cur_'+n))||0;
+        day[n+'_meta']=parseInt(localStorage.getItem('fuel_meta_'+n))||DEFAULTS[n];
+      }
+    });
     hist[date]=day;
     var keys=Object.keys(hist).sort().slice(-30);
     var trimmed={};keys.forEach(function(k){trimmed[k]=hist[k];});
@@ -539,14 +630,62 @@ function saveHistoryDay(date){
   }catch(e){}
 }
 function loadHistory(){try{return JSON.parse(localStorage.getItem('fuel_hist')||'{}');}catch(e){return{};}}
-function getVal(n){return parseInt(localStorage.getItem('fuel_cur_'+n))||0;}
+function getVal(n){
+  if(n==='cafe')return getCafeMl();
+  return parseInt(localStorage.getItem('fuel_cur_'+n))||0;
+}
 function getMeta(n){return parseInt(localStorage.getItem('fuel_meta_'+n))||DEFAULTS[n];}
-function setVal(n,v){localStorage.setItem('fuel_cur_'+n,v);}
+function setVal(n,v){
+  if(n==='cafe'){setCafeMl(v);return;}
+  localStorage.setItem('fuel_cur_'+n,v);
+}
 function setMeta(n,v){localStorage.setItem('fuel_meta_'+n,v);}
 
 function updateNut(n){
-  var cur=getVal(n),meta=getMeta(n),pct=Math.min(cur/meta,1)*100;
+  var cur=getVal(n),meta=getMeta(n);
   var elCur=document.getElementById('cur-'+n);
+
+  if(n==='cafe'){
+    // v1.2: café tem display dedicado em ml + mg
+    var mg=getCafeMg();
+    var metaMg=meta; // meta do café é em mg
+    var pctMg=Math.min(mg/metaMg,1)*100;
+
+    // Display ml
+    if(elCur)elCur.textContent=cur;
+    var elTgt=document.getElementById('tgt-cafe');if(elTgt)elTgt.textContent='∞';
+
+    // Painel mg
+    var mgVal=document.getElementById('cafe-mg-val');
+    if(mgVal){
+      mgVal.textContent=mg;
+      mgVal.classList.remove('warn','over');
+      if(mg>metaMg)mgVal.classList.add('over');
+      else if(mg>metaMg*0.75)mgVal.classList.add('warn');
+    }
+    var mgMeta=document.getElementById('cafe-mg-meta');if(mgMeta)mgMeta.textContent=metaMg;
+    var mgBar=document.getElementById('cafe-mg-bar');
+    if(mgBar){
+      mgBar.style.width=Math.min(pctMg,100)+'%';
+      if(mg>metaMg)mgBar.style.background='var(--red)';
+      else if(pctMg>=75)mgBar.style.background='var(--yel)';
+      else mgBar.style.background='var(--cafe)';
+    }
+
+    // Resumo
+    var rEl=document.getElementById('r-cafe');if(rEl)rEl.textContent=cur;
+    var rMg=document.getElementById('r-cafe-mg');if(rMg)rMg.textContent=mg;
+    var rMeta=document.getElementById('r-cafe-meta');if(rMeta)rMeta.textContent=metaMg;
+    var rBar=document.getElementById('r-cafe-bar');if(rBar)rBar.style.width=Math.min(pctMg,100)+'%';
+    var rPct=document.getElementById('r-cafe-pct');if(rPct)rPct.textContent=Math.round(pctMg)+'%';
+
+    // Última dose + sleep window
+    updateSleepWindow();
+    return;
+  }
+
+  // Outros nutrientes (lógica original)
+  var pct=Math.min(cur/meta,1)*100;
   if(elCur){elCur.textContent=cur;elCur.classList.toggle('over',cur>meta);}
   var elTgt=document.getElementById('tgt-'+n);if(elTgt)elTgt.textContent=meta;
   var elMeta=document.getElementById('meta-'+n);if(elMeta)elMeta.value=meta;
@@ -557,29 +696,158 @@ function updateNut(n){
     else if(pct>=85)prg.style.background='var(--yel)';
     else prg.style.background=CORS[n];
   }
-  // Café: mostrar mg cafeína
-  if(n==='cafe'){
-    var cafeEl=document.getElementById('cafe-cafeina');
-    if(cafeEl){
-      var mg=cur*80;
-      if(mg>300){cafeEl.textContent='≈ '+mg+'mg cafeína · ACIMA DO LIMITE';cafeEl.style.color='var(--red)';}
-      else if(mg>200){cafeEl.textContent='≈ '+mg+'mg cafeína · próximo do limite';cafeEl.style.color='var(--yel)';}
-      else{cafeEl.textContent='≈ '+mg+'mg cafeína · meia-vida 5-6h';cafeEl.style.color='var(--t3)';}
-    }
-  }
   var rEl=document.getElementById('r-'+n);if(rEl)rEl.textContent=cur;
   var rMeta=document.getElementById('r-'+n+'-meta');if(rMeta)rMeta.textContent=meta;
   var rBar=document.getElementById('r-'+n+'-bar');if(rBar)rBar.style.width=pct+'%';
   var rPct=document.getElementById('r-'+n+'-pct');if(rPct)rPct.textContent=Math.round(pct)+'%';
 }
 
+// ══════════════════════════════════════════════════════
+// v1.2 — SLEEP WINDOW (Drake 2013, +6h)
+// ══════════════════════════════════════════════════════
+function fmtHora(ts){
+  var d=new Date(ts);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function updateSleepWindow(){
+  var ult=getUltDose();
+  var sleep=document.getElementById('cafe-sleep');
+  var hora=document.getElementById('cafe-sleep-hora');
+  var info=document.getElementById('cafe-sleep-info');
+  var icon=document.getElementById('cafe-sleep-icon');
+  var ultEl=document.getElementById('cafe-ult-dose');
+  var notifBtn=document.getElementById('cafe-notif-btn');
+
+  if(!ult){
+    if(hora)hora.textContent='--:--';
+    if(info)info.textContent='Adicione café para calcular o horário ideal.';
+    if(icon)icon.textContent='😴';
+    if(ultEl)ultEl.textContent='Nenhuma dose registrada hoje.';
+    if(sleep)sleep.classList.remove('alert');
+    if(notifBtn){notifBtn.style.display='none';}
+    return;
+  }
+
+  var ideal=ult+6*60*60*1000; // +6h em ms
+  var agora=Date.now();
+  var faltaMs=ideal-agora;
+  var faltaMin=Math.round(faltaMs/60000);
+
+  if(hora)hora.textContent=fmtHora(ideal);
+  if(ultEl)ultEl.innerHTML='Última dose: <strong>'+fmtHora(ult)+'</strong>';
+
+  if(faltaMin<=0){
+    // Já passou — pode dormir
+    if(info)info.textContent='✓ Janela liberada · cafeína já abaixou para níveis seguros.';
+    if(icon)icon.textContent='✓';
+    if(sleep)sleep.classList.remove('alert');
+  } else {
+    var h=Math.floor(faltaMin/60);
+    var m=faltaMin%60;
+    var faltaStr=h>0?(h+'h '+m+'min'):(m+'min');
+    if(info)info.textContent='Aguarde '+faltaStr+' · cafeína prejudica SWS dentro dessa janela.';
+    if(icon)icon.textContent='⏳';
+    if(sleep)sleep.classList.add('alert');
+  }
+
+  // Botão notificação
+  if(notifBtn){
+    notifBtn.style.display='flex';
+    var agendada=getNotifAgendada();
+    if(agendada===ideal&&faltaMs>0){
+      notifBtn.classList.add('ativo');
+      notifBtn.innerHTML='🔔 Aviso agendado para '+fmtHora(ideal);
+    } else {
+      notifBtn.classList.remove('ativo');
+      notifBtn.innerHTML='🔔 Avisar quando puder dormir';
+    }
+    // Bloqueia se notificação não é suportada ou negada
+    if(!('Notification' in window)||Notification.permission==='denied'){
+      notifBtn.classList.add('bloqueado');
+      notifBtn.innerHTML='🔕 Notificação bloqueada nas configurações';
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// v1.2 — NOTIFICAÇÃO LOCAL
+// Usa Notification API + setTimeout. Funciona enquanto app
+// estiver aberto/PWA ativo. Em background, depende do SO.
+// ══════════════════════════════════════════════════════
+var notifTimer=null;
+
+function agendarNotificacaoSono(){
+  if(!('Notification' in window)){
+    alert('Seu navegador não suporta notificações.');
+    return;
+  }
+  var ult=getUltDose();
+  if(!ult)return;
+  var ideal=ult+6*60*60*1000;
+  var faltaMs=ideal-Date.now();
+  if(faltaMs<=0){
+    alert('A janela já está liberada — você já pode dormir.');
+    return;
+  }
+
+  // Pede permissão se necessário
+  if(Notification.permission==='default'){
+    Notification.requestPermission().then(function(p){
+      if(p==='granted')agendarNotificacaoSono();
+      else updateSleepWindow();
+    });
+    return;
+  }
+  if(Notification.permission==='denied'){
+    alert('Notificações bloqueadas. Permita nas configurações do navegador.');
+    updateSleepWindow();
+    return;
+  }
+
+  // Limpa timer anterior
+  if(notifTimer){clearTimeout(notifTimer);notifTimer=null;}
+
+  // Agenda
+  setNotifAgendada(ideal);
+  notifTimer=setTimeout(function(){
+    try{
+      new Notification('☕ Cafeína baixou',{
+        body:'Já se passaram 6h desde sua última dose. Boa hora para dormir — SWS protegido.',
+        icon:'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="%23d97706"/><text x="50" y="68" font-size="56" text-anchor="middle">☕</text></svg>'),
+        tag:'fuel-cafe-sleep',
+        requireInteraction:true,
+      });
+    }catch(e){}
+    setNotifAgendada(0);
+    updateSleepWindow();
+  },faltaMs);
+
+  updateSleepWindow();
+}
+
+function cancelarNotificacao(){
+  if(notifTimer){clearTimeout(notifTimer);notifTimer=null;}
+  setNotifAgendada(0);
+  updateSleepWindow();
+}
+
+// ══════════════════════════════════════════════════════
+// v1.2 — Render do seletor de tipo de café
+// ══════════════════════════════════════════════════════
+// v1.2.1: renderCafeTipos removida — V60 fixo, sem seletor
+
 function setupNut(n){
   var btn=document.getElementById('btn-'+n);
   var inp=document.getElementById('inp-'+n);
   if(btn&&inp){
     btn.addEventListener('click',function(){
-      var v=parseInt(inp.value);
-      if(!isNaN(v)&&v>0){setVal(n,getVal(n)+v);inp.value='';updateNut(n);animatePulse('cur-'+n);}
+      var v=parseFloat(inp.value);
+      if(!isNaN(v)&&v>0){
+        setVal(n,getVal(n)+v);
+        if(n==='cafe')setUltDose(Date.now()); // v1.2: registra timestamp
+        inp.value='';updateNut(n);animatePulse('cur-'+n);
+      }
     });
     inp.addEventListener('keydown',function(e){if(e.key==='Enter')btn.click();});
   }
@@ -587,8 +855,12 @@ function setupNut(n){
   if(card){
     card.querySelectorAll('.qbtn').forEach(function(q){
       q.addEventListener('click',function(){
-        var v=parseInt(q.dataset.v);
-        if(!isNaN(v)){setVal(n,getVal(n)+v);updateNut(n);animatePulse('cur-'+n);}
+        var v=parseFloat(q.dataset.v);
+        if(!isNaN(v)){
+          setVal(n,getVal(n)+v);
+          if(n==='cafe')setUltDose(Date.now()); // v1.2: registra timestamp
+          updateNut(n);animatePulse('cur-'+n);
+        }
       });
     });
   }
@@ -601,27 +873,27 @@ function setupNut(n){
   }
   updateNut(n);
 }
-
 function animatePulse(id){
   var el=document.getElementById(id);if(!el)return;
   el.style.transition='transform 0.15s ease';
   el.style.transform='scale(1.15)';
   setTimeout(function(){el.style.transform='scale(1)';},150);
 }
-
 function calcStreak(){
-  var hist=loadHistory(),today=getToday(),streak=0;
+  var hist=loadHistory(),streak=0;
   for(var i=1;i<=365;i++){
     var d=new Date();d.setDate(d.getDate()-i);
     var k=d.toISOString().slice(0,10),day=hist[k];
     if(!day)break;
-    var completed=NUTS.filter(function(n){return day[n]>=(day[n+'_meta']||DEFAULTS[n])*0.8;}).length;
+    var completed=NUTS.filter(function(n){
+      if(n==='cafe')return day.cafe<=(day.cafe_meta||DEFAULTS.cafe); // café: dentro do limite
+      return day[n]>=(day[n+'_meta']||DEFAULTS[n])*0.8;
+    }).length;
     if(completed>=3)streak++;else break;
   }
   var el=document.getElementById('hdr-streak');if(el)el.textContent='🔥 '+streak;
   return streak;
 }
-
 function renderHist(){
   var bars=document.getElementById('hist-bars');if(!bars)return;
   bars.innerHTML='';
@@ -656,12 +928,14 @@ function generateAI(){
   body.innerHTML='<div class="ai-load"><div class="ai-dots"><span></span><span></span><span></span></div> Analisando marcadores nutricionais...</div>';
   var vals={},metas={};
   NUTS.forEach(function(n){vals[n]=getVal(n);metas[n]=getMeta(n);});
-  var pcts={};NUTS.forEach(function(n){pcts[n]=Math.round(vals[n]/metas[n]*100);});
+  var cafeMg=getCafeMg();
+  var pcts={};NUTS.forEach(function(n){
+    if(n==='cafe')pcts[n]=Math.round(cafeMg/metas.cafe*100);
+    else pcts[n]=Math.round(vals[n]/metas[n]*100);
+  });
   var hist=loadHistory();
   var histKeys=Object.keys(hist).sort().slice(-7);
-  var avgCals=histKeys.length?Math.round(histKeys.reduce(function(a,k){return a+(hist[k].cals||0);},0)/histKeys.length):0;
   var avgProt=histKeys.length?Math.round(histKeys.reduce(function(a,k){return a+(hist[k].prot||0);},0)/histKeys.length):0;
-
   setTimeout(function(){
     var txt='';
     // Proteína
@@ -677,22 +951,27 @@ function generateAI(){
     else if(pcts.cals>130) txt+='Calorias: '+vals.cals+'kcal ('+pcts.cals+'%). Superávit — proteína em dia = hipertrofia. ';
     // Carboidrato
     if(pcts.carb<60) txt+='Carbo: '+pcts.carb+'% da meta. 40-60g complexo 1-2h antes do turno. ';
-    // Café — contexto turno noturno
+    // CAFÉ — v1.2.1 com mg correto (V60 fixo)
     if(vals.cafe>0){
-      var mg=vals.cafe*80;
-      if(vals.cafe>4) txt+='Café: '+vals.cafe+' xícaras (≈'+mg+'mg). Acima de 400mg prejudica qualidade do SWS — reduza amanhã. ';
-      else if(vals.cafe>=3) txt+='Café: '+vals.cafe+' xícaras (≈'+mg+'mg). Dentro do limite — respeite a janela de 6h antes de dormir. ';
-      else txt+='Café: '+vals.cafe+' xícaras (≈'+mg+'mg). Uso controlado. ';
+      var nomeTipo='V60';
+      if(cafeMg>400) txt+='Café: '+vals.cafe+'ml de '+nomeTipo+' = '+cafeMg+'mg cafeína. Acima do limite EFSA (400mg/dia) — reduza amanhã. ';
+      else if(cafeMg>300) txt+='Café: '+cafeMg+'mg cafeína (limite 400mg). Próximo do teto — respeite a janela de 6h antes de dormir. ';
+      else if(cafeMg>200) txt+='Café: '+cafeMg+'mg cafeína. Uso moderado. ';
+      else txt+='Café: '+cafeMg+'mg — uso controlado. ';
+
+      // Adiciona aviso sobre janela de dormir
+      var ult=getUltDose();
+      if(ult){
+        var idealStr=fmtHora(ult+6*60*60*1000);
+        txt+='Janela de sono livre após '+idealStr+' (Drake 2013). ';
+      }
     }
     // Histórico
-    if(avgCals>0&&histKeys.length>=3){
-      if(avgProt<metas.prot*0.8) txt+='Média histórica: '+avgProt+'g proteína — abaixo da meta. Prioridade: aumentar proteína. ';
-    }
+    if(histKeys.length>=3&&avgProt<metas.prot*0.8) txt+='Média histórica: '+avgProt+'g proteína — abaixo da meta. Prioridade: aumentar proteína. ';
     // Recomendação final
     if(pcts.prot<80) txt+='Regra do turno noturno: carbo baixo IG durante o trabalho + proteína no pós-turno.';
     else if(pcts.agua<70) txt+='Prepare 2 garrafas de 1L antes de cada turno. Hidratação proativa é mais eficaz que reativa.';
     else txt+='Distribua a proteína em 4-5 janelas ao longo das 24h. Síntese proteica dura 3-5h por refeição.';
-
     body.style.opacity='0';body.style.transition='opacity 0.5s';
     setTimeout(function(){body.textContent=txt;body.style.opacity='1';},400);
   },1600);
@@ -701,7 +980,11 @@ function generateAI(){
 document.getElementById('btn-reset').addEventListener('click',function(){
   if(!confirm('Resetar todos os dados de hoje?'))return;
   saveHistoryDay(getToday());
-  NUTS.forEach(function(n){setVal(n,0);updateNut(n);});
+  NUTS.forEach(function(n){setVal(n,0);});
+  setCafeMl(0);
+  setUltDose(0);
+  cancelarNotificacao();
+  NUTS.forEach(function(n){updateNut(n);});
   renderHist();
 });
 
@@ -711,7 +994,6 @@ function updateDate(){
   if(el)el.textContent=dias[n.getDay()]+' '+String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0');
 }
 
-// FIX: SW domain check
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
     var host=window.location.hostname;
@@ -720,7 +1002,6 @@ if('serviceWorker' in navigator){
     }
   });
 }
-
 var dPrm=null;
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dPrm=e;document.getElementById('ib').classList.add('show');});
 document.getElementById('ib-y').addEventListener('click',async function(){document.getElementById('ib').classList.remove('show');if(dPrm){dPrm.prompt();await dPrm.userChoice;dPrm=null;}});
@@ -735,6 +1016,19 @@ window.addEventListener('load',function(){
 });
 
 document.getElementById('btn-ai').addEventListener('click',generateAI);
+
+// v1.2: setup do botão de notificação
+document.getElementById('cafe-notif-btn').addEventListener('click',function(){
+  if(this.classList.contains('bloqueado'))return;
+  if(this.classList.contains('ativo')){
+    if(confirm('Cancelar o aviso agendado?'))cancelarNotificacao();
+  } else {
+    agendarNotificacaoSono();
+  }
+});
+
+// v1.2: atualiza sleep window a cada 30 segundos
+setInterval(updateSleepWindow,30000);
 
 updateDate();setInterval(updateDate,60000);
 NUTS.forEach(function(n){setupNut(n);});
