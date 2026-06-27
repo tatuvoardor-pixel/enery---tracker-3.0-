@@ -223,6 +223,45 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .ib-n{background:transparent;color:var(--t3);border:none;font-size:0.9rem;cursor:pointer;padding:3px;}
 .hidden{display:none!important;}
 .lbl{font-family:'Roboto Mono',monospace;font-size:0.6rem;text-transform:uppercase;color:var(--t3);}
+
+/* ═══ BUSCADOR DE ALIMENTOS v1.4 ═══ */
+.btn-busca{width:100%;padding:14px;background:linear-gradient(135deg,var(--grn-d),var(--prot-d));color:var(--grn);border:1px solid var(--grn-m);border-radius:12px;font-family:'Oswald',sans-serif;font-size:0.95rem;text-transform:uppercase;letter-spacing:0!important;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;}
+.btn-busca:active{transform:scale(0.98);}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;display:none;align-items:flex-end;}
+.modal-bg.show{display:flex;}
+.modal-box{width:100%;max-height:90vh;background:var(--s1);border-top:1px solid var(--bd);border-radius:18px 18px 0 0;display:flex;flex-direction:column;animation:slideUp 0.3s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-hdr{padding:16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.modal-titulo{font-family:'Lilita One',cursive;font-size:1.2rem;color:var(--grn);}
+.modal-x{background:var(--s2);border:1px solid var(--bd);color:var(--t2);width:32px;height:32px;border-radius:8px;font-size:1rem;cursor:pointer;}
+.modal-search{padding:12px 16px;border-bottom:1px solid var(--bd);}
+.modal-search input{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;color:var(--tx);font-family:'Lilita One',cursive;font-size:1rem;outline:none;}
+.modal-search input:focus{border-color:var(--grn);}
+.modal-lista{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;}
+.alimento-item{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.15s;}
+.alimento-item:active{background:var(--grn-d);border-color:var(--grn-m);}
+.alimento-nome{font-family:'Oswald',sans-serif;font-size:0.9rem;color:var(--tx);text-transform:uppercase;}
+.alimento-macros{font-family:'Roboto Mono',monospace;font-size:0.55rem;color:var(--t3);margin-top:2px;}
+.alimento-vazio{padding:24px;text-align:center;color:var(--t3);font-family:'Roboto Mono',monospace;font-size:0.7rem;}
+.modal-confirma{padding:14px 16px;border-top:1px solid var(--bd);background:var(--s2);}
+.confirma-nome{font-family:'Lilita One',cursive;font-size:1.1rem;color:var(--grn);margin-bottom:8px;}
+.confirma-input-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.confirma-input{flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;color:var(--tx);font-family:'Lilita One',cursive;font-size:1.3rem;text-align:center;outline:none;}
+.confirma-input:focus{border-color:var(--grn);}
+.confirma-unit{font-family:'Oswald',sans-serif;color:var(--t3);font-size:0.85rem;}
+.confirma-preview{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.confirma-prev-item{text-align:center;}
+.confirma-prev-val{font-family:'Lilita One',cursive;font-size:1.1rem;line-height:1;}
+.confirma-prev-lbl{font-family:'Roboto Mono',monospace;font-size:0.5rem;color:var(--t3);text-transform:uppercase;margin-top:2px;}
+.confirma-prev-item.cals .confirma-prev-val{color:var(--grn);}
+.confirma-prev-item.prot .confirma-prev-val{color:var(--prot);}
+.confirma-prev-item.carb .confirma-prev-val{color:var(--carb);}
+.confirma-prev-item.gord .confirma-prev-val{color:var(--gord);}
+.btn-confirma{width:100%;padding:14px;background:var(--grn);color:#000;border:none;border-radius:10px;font-family:'Lilita One',cursive;font-size:1.1rem;cursor:pointer;}
+.btn-confirma:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-quick-g{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.btn-quick-g button{flex:1;background:var(--bg);border:1px solid var(--bd);color:var(--t2);padding:8px;border-radius:8px;font-family:'Roboto Mono',monospace;font-size:0.7rem;cursor:pointer;}
+.btn-quick-g button:active{background:var(--grn-d);color:var(--grn);}
 </style>
 </head>
 <body>
@@ -246,7 +285,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         </svg>
       </div>
       <span class="hname">FUEL</span>
-      <span class="bridge-chip" id="bridge-chip">v1.3</span>
+      <span class="bridge-chip" id="bridge-chip">v1.4</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <span class="hdate" id="hdr-date"></span>
@@ -297,6 +336,9 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         </div>
       </div>
     </div>
+    <!-- BUSCADOR DE ALIMENTOS v1.4 -->
+    <button class="btn-busca" id="btn-abrir-busca">🍽 Buscar Alimento</button>
+
     <!-- ÁGUA -->
     <div class="nc agua card" id="nc-agua">
       <div class="nc-top">
@@ -504,7 +546,54 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   </div>
 </div>
 
-<!-- BioBridge: conecta com BioMetrics -->
+<!-- MODAL BUSCA DE ALIMENTOS v1.4 -->
+<div class="modal-bg" id="modal-busca">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-titulo">🍽 Buscar Alimento</div>
+      <button class="modal-x" id="modal-fechar">✕</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="busca-input" placeholder="Ex: arroz, frango, banana..." autocomplete="off">
+    </div>
+    <div class="modal-lista" id="modal-lista"></div>
+    <div class="modal-confirma hidden" id="modal-confirma">
+      <div class="confirma-nome" id="confirma-nome">--</div>
+      <div class="btn-quick-g">
+        <button data-g="50">50g</button>
+        <button data-g="100">100g</button>
+        <button data-g="150">150g</button>
+        <button data-g="200">200g</button>
+        <button data-g="300">300g</button>
+      </div>
+      <div class="confirma-input-row">
+        <input type="number" class="confirma-input" id="confirma-input" placeholder="Gramas" inputmode="numeric">
+        <span class="confirma-unit">g</span>
+      </div>
+      <div class="confirma-preview">
+        <div class="confirma-prev-item cals">
+          <div class="confirma-prev-val" id="prev-cals">0</div>
+          <div class="confirma-prev-lbl">kcal</div>
+        </div>
+        <div class="confirma-prev-item prot">
+          <div class="confirma-prev-val" id="prev-prot">0</div>
+          <div class="confirma-prev-lbl">prot g</div>
+        </div>
+        <div class="confirma-prev-item carb">
+          <div class="confirma-prev-val" id="prev-carb">0</div>
+          <div class="confirma-prev-lbl">carb g</div>
+        </div>
+        <div class="confirma-prev-item gord">
+          <div class="confirma-prev-val" id="prev-gord">0</div>
+          <div class="confirma-prev-lbl">gord g</div>
+        </div>
+      </div>
+      <button class="btn-confirma" id="btn-confirma">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BioBridge -->
 <script src="bio-bridge.js"></script>
 
 <script>
@@ -1018,6 +1107,181 @@ document.getElementById('cafe-notif-btn').addEventListener('click',function(){
 });
 
 setInterval(updateSleepWindow,30000);
+
+// ═══════════════════════════════════════════════════════════
+// BANCO DE ALIMENTOS v1.4 — valores TACO (UNICAMP) por 100g
+// ═══════════════════════════════════════════════════════════
+var ALIMENTOS = [
+  // Carboidratos básicos
+  {n:"Pão francês",            kcal:300, prot:8.0,  carb:58.6, gord:3.1},
+  {n:"Arroz branco cozido",    kcal:128, prot:2.5,  carb:28.1, gord:0.2},
+  {n:"Feijão carioca cozido",  kcal:76,  prot:4.8,  carb:13.6, gord:0.5},
+  {n:"Batata cozida",          kcal:86,  prot:1.5,  carb:19.0, gord:0.1},
+  {n:"Batata doce cozida",     kcal:86,  prot:1.6,  carb:20.0, gord:0.1},
+  {n:"Pão de queijo",          kcal:286, prot:5.0,  carb:39.0, gord:13.0},
+  // Proteínas (carnes/ovos)
+  {n:"Carne moída cozida",     kcal:212, prot:27.0, carb:0,    gord:11.3},
+  {n:"Bife (alcatra grelhada)",kcal:219, prot:35.9, carb:0,    gord:7.3},
+  {n:"Coração de galinha",     kcal:153, prot:16.0, carb:0,    gord:9.3},
+  {n:"Fígado bovino frito",    kcal:235, prot:27.7, carb:5.9,  gord:11.0},
+  {n:"Frango (peito grelhado)",kcal:159, prot:32.0, carb:0,    gord:2.5},
+  {n:"Peixe (tilápia grelhada)",kcal:96, prot:20.1, carb:0,    gord:1.7},
+  {n:"Carne seca",             kcal:311, prot:38.0, carb:0,    gord:17.0},
+  {n:"Ovo cozido",             kcal:146, prot:13.3, carb:0.6,  gord:9.5},
+  // Gorduras
+  {n:"Margarina",              kcal:596, prot:0.7,  carb:0.6,  gord:65.6},
+  {n:"Manteiga",               kcal:726, prot:0.4,  carb:0.06, gord:82.4},
+  {n:"Maionese",               kcal:384, prot:0.4,  carb:2.7,  gord:41.0},
+  // Frutas
+  {n:"Banana prata",           kcal:98,  prot:1.2,  carb:26.0, gord:0.1},
+  {n:"Maçã",                   kcal:56,  prot:0.3,  carb:15.2, gord:0.4},
+  {n:"Pera",                   kcal:53,  prot:0.3,  carb:14.0, gord:0.1},
+  {n:"Laranja",                kcal:47,  prot:1.0,  carb:11.5, gord:0.1},
+  {n:"Limão (suco)",           kcal:32,  prot:1.1,  carb:7.1,  gord:0.5},
+  {n:"Melancia",               kcal:30,  prot:0.6,  carb:7.6,  gord:0.2},
+  {n:"Uva",                    kcal:49,  prot:0.4,  carb:12.0, gord:0.1},
+  {n:"Morango",                kcal:33,  prot:0.7,  carb:7.7,  gord:0.3},
+  {n:"Coco (polpa)",           kcal:354, prot:3.3,  carb:15.0, gord:33.0},
+  // Vegetais
+  {n:"Salada (alface + tomate)",kcal:14, prot:1.1,  carb:2.5,  gord:0.2},
+  {n:"Couve refogada",         kcal:28,  prot:2.8,  carb:5.0,  gord:0.3},
+  {n:"Pepino",                 kcal:12,  prot:0.9,  carb:2.1,  gord:0.1},
+  {n:"Cenoura",                kcal:41,  prot:0.9,  carb:9.6,  gord:0.2},
+  // Lanches/Doces
+  {n:"Bolacha recheada",       kcal:472, prot:5.0,  carb:71.0, gord:19.0},
+  {n:"Chocolate ao leite",     kcal:540, prot:7.0,  carb:56.0, gord:31.0},
+  {n:"Paçoca",                 kcal:478, prot:12.6, carb:50.0, gord:24.0},
+  {n:"Snickers",               kcal:488, prot:9.7,  carb:56.0, gord:24.0},
+  {n:"Pipoca com óleo",        kcal:448, prot:9.7,  carb:56.0, gord:20.0},
+  {n:"Bolo de chocolate",      kcal:365, prot:5.0,  carb:58.0, gord:12.0},
+  // Refeições combinadas
+  {n:"Pizza muzzarela",        kcal:251, prot:12.0, carb:30.0, gord:9.0},
+  {n:"X-Salada (hambúrguer)",  kcal:234, prot:14.0, carb:22.0, gord:10.0},
+];
+
+// ─── Normaliza pra busca (sem acentos, minúsculo) ───
+function normalizar(s){
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9 ]/g,'');
+}
+
+var alimentoSelecionado = null;
+
+function filtrarAlimentos(termo){
+  var t = normalizar(termo);
+  if(!t) return ALIMENTOS;
+  return ALIMENTOS.filter(function(a){
+    return normalizar(a.n).indexOf(t) >= 0;
+  });
+}
+
+function renderListaAlimentos(termo){
+  var lista = document.getElementById('modal-lista');
+  if(!lista) return;
+  var filtrados = filtrarAlimentos(termo);
+  if(filtrados.length === 0){
+    lista.innerHTML = '<div class="alimento-vazio">Nenhum alimento encontrado.<br>Tente "arroz", "frango", "banana"...</div>';
+    return;
+  }
+  lista.innerHTML = '';
+  filtrados.forEach(function(a,idx){
+    var item = document.createElement('div');
+    item.className = 'alimento-item';
+    item.innerHTML = '<div>'+
+      '<div class="alimento-nome">'+a.n+'</div>'+
+      '<div class="alimento-macros">'+a.kcal+' kcal · '+a.prot+'g prot · '+a.carb+'g carb · '+a.gord+'g gord (por 100g)</div>'+
+      '</div>';
+    item.addEventListener('click',function(){ selecionarAlimento(a); });
+    lista.appendChild(item);
+  });
+}
+
+function selecionarAlimento(a){
+  alimentoSelecionado = a;
+  document.getElementById('modal-confirma').classList.remove('hidden');
+  document.getElementById('confirma-nome').textContent = a.n;
+  document.getElementById('confirma-input').value = '';
+  document.getElementById('confirma-input').focus();
+  atualizarPreview(0);
+  // Scroll pra ver o card de confirmação
+  setTimeout(function(){
+    document.getElementById('modal-confirma').scrollIntoView({behavior:'smooth',block:'end'});
+  },100);
+}
+
+function atualizarPreview(g){
+  if(!alimentoSelecionado) return;
+  var f = g / 100;
+  document.getElementById('prev-cals').textContent = Math.round(alimentoSelecionado.kcal * f);
+  document.getElementById('prev-prot').textContent = (alimentoSelecionado.prot * f).toFixed(1);
+  document.getElementById('prev-carb').textContent = (alimentoSelecionado.carb * f).toFixed(1);
+  document.getElementById('prev-gord').textContent = (alimentoSelecionado.gord * f).toFixed(1);
+  document.getElementById('btn-confirma').disabled = !(g > 0);
+}
+
+function confirmarAlimento(){
+  if(!alimentoSelecionado) return;
+  var g = parseFloat(document.getElementById('confirma-input').value);
+  if(isNaN(g) || g <= 0) return;
+  var f = g / 100;
+  var kcal = Math.round(alimentoSelecionado.kcal * f);
+  var prot = Math.round(alimentoSelecionado.prot * f * 10) / 10;
+  var carb = Math.round(alimentoSelecionado.carb * f * 10) / 10;
+  var gord = Math.round(alimentoSelecionado.gord * f * 10) / 10;
+  // Adiciona aos totais
+  setVal('cals', getVal('cals') + kcal);
+  setVal('prot', getVal('prot') + prot);
+  setVal('carb', getVal('carb') + carb);
+  setVal('gord', getVal('gord') + gord);
+  // Atualiza UI
+  ['cals','prot','carb','gord'].forEach(function(n){
+    updateNut(n);
+    animatePulse('cur-'+n);
+  });
+  // Envia pro BioMetrics (debounce)
+  bridgePushDebounced();
+  // Feedback
+  bridgeFlash(alimentoSelecionado.n + ' (' + g + 'g)');
+  // Fecha modal
+  fecharModal();
+}
+
+function abrirModal(){
+  document.getElementById('modal-busca').classList.add('show');
+  document.getElementById('modal-confirma').classList.add('hidden');
+  document.getElementById('busca-input').value = '';
+  alimentoSelecionado = null;
+  renderListaAlimentos('');
+  setTimeout(function(){ document.getElementById('busca-input').focus(); },200);
+}
+
+function fecharModal(){
+  document.getElementById('modal-busca').classList.remove('show');
+  alimentoSelecionado = null;
+}
+
+// Wire up
+document.getElementById('btn-abrir-busca').addEventListener('click', abrirModal);
+document.getElementById('modal-fechar').addEventListener('click', fecharModal);
+document.getElementById('modal-busca').addEventListener('click', function(e){
+  if(e.target.id === 'modal-busca') fecharModal();
+});
+document.getElementById('busca-input').addEventListener('input', function(e){
+  document.getElementById('modal-confirma').classList.add('hidden');
+  renderListaAlimentos(e.target.value);
+});
+document.getElementById('confirma-input').addEventListener('input', function(e){
+  atualizarPreview(parseFloat(e.target.value) || 0);
+});
+document.querySelectorAll('.btn-quick-g button').forEach(function(b){
+  b.addEventListener('click', function(){
+    var g = parseFloat(b.dataset.g);
+    document.getElementById('confirma-input').value = g;
+    atualizarPreview(g);
+  });
+});
+document.getElementById('btn-confirma').addEventListener('click', confirmarAlimento);
 
 updateDate();setInterval(updateDate,60000);
 NUTS.forEach(function(n){setupNut(n);});
