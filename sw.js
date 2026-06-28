@@ -1,25 +1,1294 @@
-/* FUEL Service Worker v1.4 */
-const CACHE='fuel-v1.4';
-const FILES=['./','./index.html','./bio-bridge.js'];
+<!DOCTYPE html>
+<!-- FUEL © 2025 — Todos os direitos reservados -->
+<!-- Criado por: Eliezer Silva Giorni — Versão 1.3 -->
+<!-- v1.3: integração BioBridge — envia automaticamente água/kcal/prot/carb pro BioMetrics
+     com debounce de 800ms (evita spam ao clicar múltiplos quick-buttons em sequência).
+     Café e gordura ficam locais (BioMetrics não rastreia). -->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>FUEL</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-title" content="FUEL">
+<meta name="theme-color" content="#09090b">
+<script>
+(function(){
+  var ico='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'+
+    '<rect width="512" height="512" rx="112" fill="#09090b"/>'+
+    '<polyline points="300,85 168,268 248,268 216,428 348,244 268,244 300,85" fill="none" stroke="#4ade80" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '</svg>';
+  var iUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(ico);
+  var mf={name:"FUEL",short_name:"FUEL",display:"fullscreen",orientation:"portrait",start_url:"./",background_color:"#09090b",theme_color:"#09090b",icons:[{src:iUrl,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+  var ml=document.createElement('link');ml.rel='manifest';ml.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(mf));document.head.appendChild(ml);
+  var il=document.createElement('link');il.rel='apple-touch-icon';il.href=iUrl;document.head.appendChild(il);
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Oswald:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09090b;--s1:#111114;--s2:#18181c;--s3:#242428;--bd:#36363e;
+  --tx:#f4f4f5;--t2:#a1a1aa;--t3:#62626e;
+  --grn:#4ade80;--grn-d:#4ade8012;--grn-m:#4ade8040;
+  --grn2:#22c55e;--grn3:#86efac;
+  --yel:#f59e0b;--org:#f97316;--red:#ef4444;
+  --agua:#38bdf8;--agua-d:#38bdf812;--agua-m:#38bdf840;
+  --prot:#a78bfa;--prot-d:#a78bfa12;--prot-m:#a78bfa40;
+  --carb:#fb923c;--carb-d:#fb923c12;--carb-m:#fb923c40;
+  --gord:#fbbf24;--gord-d:#fbbf2412;--gord-m:#fbbf2440;
+  --cafe:#d97706;--cafe-d:#d9770612;--cafe-m:#d9770840;
+  --acc:#2dd4bf;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;letter-spacing:0!important;}
+html,body{width:100%;max-width:100vw;height:100%;background:var(--bg);color:var(--tx);overflow:hidden;position:fixed;top:0;left:0;font-family:'Inter',sans-serif;}
+button{border:none;background:none;padding:0;margin:0;font-family:inherit;color:inherit;cursor:pointer;outline:none;}
+input{font-size:16px !important;}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;transition:opacity 0.9s ease;padding:0 30px;}
+#splash.hide{opacity:0;pointer-events:none;}
+#splash .sp-bolt{width:90px;height:90px;animation:spUp 0.8s ease forwards,boltPulse 2s 0.8s ease-in-out infinite;opacity:0;filter:drop-shadow(0 0 30px #4ade8088);}
+#splash .sp-name{font-family:'Lilita One',cursive;font-size:2.6rem;color:var(--grn);animation:spUp 0.8s 0.15s ease forwards;opacity:0;text-align:center;}
+#splash .sp-sub{font-family:'Roboto Mono',monospace;font-size:0.6rem;text-transform:uppercase;color:var(--t3);animation:spUp 0.8s 0.3s ease forwards;opacity:0;text-align:center;}
+@keyframes spUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes boltPulse{0%,100%{filter:drop-shadow(0 0 20px #4ade8066);}50%{filter:drop-shadow(0 0 50px #4ade80cc);}}
+@keyframes alertPulse{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,0.4);}50%{box-shadow:0 0 0 8px rgba(217,119,6,0);}}
 
-self.addEventListener('install',e=>{
-  self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)));
+.bridge-flash{position:fixed;top:env(safe-area-inset-top,12px);left:50%;transform:translateX(-50%) translateY(-30px);background:var(--s1);border:1px solid var(--acc);color:var(--acc);font-family:'Roboto Mono',monospace;font-size:0.62rem;text-transform:uppercase;padding:8px 14px;border-radius:18px;z-index:200;opacity:0;transition:opacity 0.3s,transform 0.3s;pointer-events:none;white-space:nowrap;}
+.bridge-flash.show{opacity:1;transform:translateX(-50%) translateY(8px);}
+
+.app{display:flex;flex-direction:column;width:100vw;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);position:relative;z-index:10;}
+.hdr{padding:10px 12px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--bd);gap:6px;overflow:hidden;}
+.hlogo{display:flex;align-items:center;gap:7px;min-width:0;flex-shrink:0;}
+.hbolt{width:32px;height:32px;background:var(--bg);border:1.5px solid var(--grn);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--grn-d);flex-shrink:0;}
+.hbolt svg{width:16px;height:16px;filter:drop-shadow(0 0 4px var(--grn));}
+.hname{font-family:'Lilita One',cursive;font-size:1.1rem;color:var(--grn);white-space:nowrap;}
+.bridge-chip{font-family:'Roboto Mono',monospace;font-size:0.48rem;padding:2px 6px;border-radius:5px;background:var(--s2);border:1px solid var(--bd);color:var(--t3);text-transform:uppercase;margin-left:4px;}
+.bridge-chip.ok{border-color:rgba(45,212,191,0.4);color:var(--acc);}
+.hdate{font-family:'Roboto Mono',monospace;font-size:0.52rem;color:var(--t3);white-space:nowrap;}
+.hstreak{display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--grn);background:var(--grn-d);border:1px solid var(--grn-m);border-radius:6px;padding:4px 8px;flex-shrink:0;}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 13px 24px;display:flex;flex-direction:column;gap:10px;}
+.card{background:var(--s1);border:1px solid rgba(255,255,255,0.055);box-shadow:0 12px 32px rgba(0,0,0,0.7),0 4px 12px rgba(0,0,0,0.4);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.resumo-item{background:var(--s2);border-radius:10px;padding:11px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--bd);}
+.resumo-item.agua{border-color:var(--agua-m);background:var(--agua-d);}
+.resumo-item.cals{border-color:var(--grn-m);background:var(--grn-d);}
+.resumo-item.prot{border-color:var(--prot-m);background:var(--prot-d);}
+.resumo-item.carb{border-color:var(--carb-m);background:var(--carb-d);}
+.resumo-item.gord{border-color:var(--gord-m);background:var(--gord-d);}
+.resumo-item.cafe{border-color:var(--cafe-m);background:var(--cafe-d);}
+.resumo-val{font-family:'Lilita One',cursive;font-size:1.6rem;line-height:1;}
+.resumo-item.agua .resumo-val{color:var(--agua);}
+.resumo-item.cals .resumo-val{color:var(--grn);}
+.resumo-item.prot .resumo-val{color:var(--prot);}
+.resumo-item.carb .resumo-val{color:var(--carb);}
+.resumo-item.gord .resumo-val{color:var(--gord);}
+.resumo-item.cafe .resumo-val{color:var(--cafe);}
+.resumo-meta{font-family:'Roboto Mono',monospace;font-size:0.54rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.resumo-pct{font-family:'Roboto Mono',monospace;font-size:0.65rem;font-weight:700;}
+.resumo-item.agua .resumo-pct{color:var(--agua);}
+.resumo-item.cals .resumo-pct{color:var(--grn);}
+.resumo-item.prot .resumo-pct{color:var(--prot);}
+.resumo-item.carb .resumo-pct{color:var(--carb);}
+.resumo-item.gord .resumo-pct{color:var(--gord);}
+.resumo-item.cafe .resumo-pct{color:var(--cafe);}
+.resumo-bar{height:3px;background:var(--s3);border-radius:2px;overflow:hidden;margin-top:2px;}
+.resumo-bar-fill{height:100%;border-radius:2px;transition:width 0.5s ease;}
+.resumo-item.agua .resumo-bar-fill{background:var(--agua);}
+.resumo-item.cals .resumo-bar-fill{background:var(--grn);}
+.resumo-item.prot .resumo-bar-fill{background:var(--prot);}
+.resumo-item.carb .resumo-bar-fill{background:var(--carb);}
+.resumo-item.gord .resumo-bar-fill{background:var(--gord);}
+.resumo-item.cafe .resumo-bar-fill{background:var(--cafe);}
+.nc{border-radius:12px;padding:15px;display:flex;flex-direction:column;gap:10px;}
+.nc.agua{background:var(--s1);border:1px solid var(--agua-m);}
+.nc.cals{background:var(--s1);border:1px solid var(--grn-m);}
+.nc.prot{background:var(--s1);border:1px solid var(--prot-m);}
+.nc.carb{background:var(--s1);border:1px solid var(--carb-m);}
+.nc.gord{background:var(--s1);border:1px solid var(--gord-m);}
+.nc.cafe{background:var(--s1);border:1px solid var(--cafe-m);}
+.nc-top{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;overflow:hidden;}
+.nc-left{display:flex;align-items:center;gap:6px;min-width:0;flex:1;}
+.nc-icon{font-size:1.2rem;flex-shrink:0;}
+.nc-name{font-family:'Oswald',sans-serif;font-size:0.9rem;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nc.agua .nc-name{color:var(--agua);}
+.nc.cals .nc-name{color:var(--grn);}
+.nc.prot .nc-name{color:var(--prot);}
+.nc.carb .nc-name{color:var(--carb);}
+.nc.gord .nc-name{color:var(--gord);}
+.nc.cafe .nc-name{color:var(--cafe);}
+.nc-meta{display:flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);flex-shrink:0;}
+.nc-meta-input{background:transparent;border:none;border-bottom:1px dashed var(--bd);color:var(--tx);font-family:'Lilita One',cursive;font-size:0.95rem;width:44px;text-align:center;outline:none;padding:0;-webkit-appearance:none;appearance:none;}
+.nc.agua .nc-meta-input:focus{border-bottom-color:var(--agua);}
+.nc.cals .nc-meta-input:focus{border-bottom-color:var(--grn);}
+.nc.prot .nc-meta-input:focus{border-bottom-color:var(--prot);}
+.nc.carb .nc-meta-input:focus{border-bottom-color:var(--carb);}
+.nc.gord .nc-meta-input:focus{border-bottom-color:var(--gord);}
+.nc.cafe .nc-meta-input:focus{border-bottom-color:var(--cafe);}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;}
+.nc-vals{display:flex;align-items:baseline;gap:6px;}
+.nc-cur{font-family:'Lilita One',cursive;font-size:2.4rem;line-height:1;transition:color 0.4s;}
+.nc.agua .nc-cur{color:var(--agua);}
+.nc.cals .nc-cur{color:var(--grn);}
+.nc.prot .nc-cur{color:var(--prot);}
+.nc.carb .nc-cur{color:var(--carb);}
+.nc.gord .nc-cur{color:var(--gord);}
+.nc.cafe .nc-cur{color:var(--cafe);}
+.nc-cur.over{color:var(--red)!important;}
+.nc-sep{font-family:'Roboto Mono',monospace;font-size:1rem;color:var(--t3);}
+.nc-tgt{font-family:'Roboto Mono',monospace;font-size:0.9rem;color:var(--t3);}
+.nc-unit{font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--t3);}
+.nc-progbg{height:8px;background:var(--s3);border-radius:4px;overflow:hidden;}
+.nc-progfill{height:100%;border-radius:4px;transition:width 0.4s ease,background 0.3s ease;}
+.nc-quick{display:flex;gap:6px;flex-wrap:wrap;}
+.qbtn{background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:5px 10px;font-family:'Roboto Mono',monospace;font-size:0.68rem;font-weight:700;color:var(--t2);cursor:pointer;transition:all 0.15s;}
+.nc.agua .qbtn:active{background:var(--agua-d);border-color:var(--agua);color:var(--agua);}
+.nc.cals .qbtn:active{background:var(--grn-d);border-color:var(--grn);color:var(--grn);}
+.nc.prot .qbtn:active{background:var(--prot-d);border-color:var(--prot);color:var(--prot);}
+.nc.carb .qbtn:active{background:var(--carb-d);border-color:var(--carb);color:var(--carb);}
+.nc.gord .qbtn:active{background:var(--gord-d);border-color:var(--gord);color:var(--gord);}
+.nc.cafe .qbtn:active{background:var(--cafe-d);border-color:var(--cafe);color:var(--cafe);}
+.nc-add{display:flex;gap:8px;width:100%;overflow:hidden;}
+.nc-add-input{flex:1;min-width:0;background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:'Lilita One',cursive;font-size:1rem;padding:0 10px;height:44px;outline:none;-webkit-appearance:none;appearance:none;transition:border-color 0.2s;}
+.nc.agua .nc-add-input:focus{border-color:var(--agua);}
+.nc.cals .nc-add-input:focus{border-color:var(--grn);}
+.nc.prot .nc-add-input:focus{border-color:var(--prot);}
+.nc.carb .nc-add-input:focus{border-color:var(--carb);}
+.nc.gord .nc-add-input:focus{border-color:var(--gord);}
+.nc.cafe .nc-add-input:focus{border-color:var(--cafe);}
+.nc-add-btn{height:46px;padding:0 20px;border-radius:10px;font-family:'Lilita One',cursive;font-size:1rem;transition:opacity 0.15s;flex-shrink:0;}
+.nc-add-btn:active{opacity:0.8;}
+.nc.agua .nc-add-btn{background:var(--agua);color:#000;}
+.nc.cals .nc-add-btn{background:var(--grn);color:#000;}
+.nc.prot .nc-add-btn{background:var(--prot);color:#000;}
+.nc.carb .nc-add-btn{background:var(--carb);color:#000;}
+.nc.gord .nc-add-btn{background:var(--gord);color:#000;}
+.nc.cafe .nc-add-btn{background:var(--cafe);color:#000;}
+
+.cafe-mg-painel{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.cafe-mg-row{display:flex;justify-content:space-between;align-items:baseline;}
+.cafe-mg-lbl{font-family:'Roboto Mono',monospace;font-size:0.55rem;text-transform:uppercase;color:var(--t3);}
+.cafe-mg-val{font-family:'Lilita One',cursive;font-size:1.3rem;line-height:1;color:var(--cafe);}
+.cafe-mg-val.warn{color:var(--yel);}
+.cafe-mg-val.over{color:var(--red);}
+.cafe-mg-meta{font-family:'Roboto Mono',monospace;font-size:0.7rem;color:var(--t3);}
+.cafe-mg-fonte{font-family:'Roboto Mono',monospace;font-size:0.5rem;color:var(--t3);font-style:italic;}
+.cafe-sleep{background:var(--s2);border:1px solid var(--cafe-m);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;}
+.cafe-sleep.alert{animation:alertPulse 2s ease-in-out infinite;}
+.cafe-sleep-hdr{display:flex;justify-content:space-between;align-items:center;}
+.cafe-sleep-lbl{font-family:'Roboto Mono',monospace;font-size:0.55rem;text-transform:uppercase;color:var(--cafe);font-weight:700;}
+.cafe-sleep-icon{font-size:1.1rem;}
+.cafe-sleep-hora{font-family:'Lilita One',cursive;font-size:2rem;line-height:1;color:var(--cafe);}
+.cafe-sleep-info{font-family:'Roboto Mono',monospace;font-size:0.6rem;color:var(--t2);line-height:1.5;}
+.cafe-sleep-vazio{font-family:'Roboto Mono',monospace;font-size:0.6rem;color:var(--t3);font-style:italic;text-align:center;padding:8px 0;}
+.cafe-notif-btn{background:transparent;border:1px solid var(--cafe-m);color:var(--cafe);padding:8px 12px;border-radius:8px;font-family:'Roboto Mono',monospace;font-size:0.6rem;font-weight:700;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;}
+.cafe-notif-btn:active{background:var(--cafe-d);}
+.cafe-notif-btn.ativo{background:var(--cafe-d);color:var(--cafe);}
+.cafe-notif-btn.bloqueado{opacity:0.5;cursor:not-allowed;}
+.cafe-nota{font-family:'Roboto Mono',monospace;font-size:0.56rem;color:var(--t3);line-height:1.5;}
+.cafe-fonte{font-family:'Roboto Mono',monospace;font-size:0.5rem;color:var(--t3);font-style:italic;text-align:right;}
+.cafe-ult-dose{font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t2);}
+.cafe-ult-dose strong{color:var(--cafe);}
+
+.hist-bars{display:flex;align-items:flex-end;gap:5px;height:60px;}
+.hist-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.hist-bar-bg{width:100%;flex:1;background:var(--s2);border-radius:3px;overflow:hidden;display:flex;align-items:flex-end;}
+.hist-bar-fill{width:100%;border-radius:3px;transition:height 0.6s ease;}
+.hist-bar-lbl{font-family:'Roboto Mono',monospace;font-size:0.52rem;color:var(--t3);}
+.hist-bar-lbl.today{color:var(--grn);}
+.ai-hdr{display:flex;align-items:center;gap:9px;}
+.ai-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--grn),var(--grn2));display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;}
+.ai-titulo{font-family:'Oswald',sans-serif;font-size:0.9rem;text-transform:uppercase;}
+.ai-fonte{font-family:'Roboto Mono',monospace;font-size:0.55rem;text-transform:uppercase;color:var(--t3);margin-top:1px;}
+.ai-body{font-size:0.78rem;color:var(--t2);line-height:1.7;min-height:48px;}
+.ai-load{display:flex;align-items:center;gap:8px;color:var(--t3);font-size:0.72rem;}
+.ai-dots span{display:inline-block;width:4px;height:4px;border-radius:1px;animation:aiD 1.2s ease-in-out infinite;}
+.ai-dots span:nth-child(1){background:var(--grn);}
+.ai-dots span:nth-child(2){background:var(--grn2);animation-delay:0.2s;}
+.ai-dots span:nth-child(3){background:var(--grn3);animation-delay:0.4s;}
+@keyframes aiD{0%,80%,100%{transform:scale(0.5);opacity:0.3;}40%{transform:scale(1);opacity:1;}}
+.btn-ai{width:100%;padding:12px;background:var(--grn-d);color:var(--grn);border:1px solid var(--grn-m);border-radius:8px;font-family:'Oswald',sans-serif;font-size:0.85rem;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.btn-ai:active{background:var(--grn-m);}
+.ftr{padding:10px 13px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-shrink:0;}
+.btn-reset{flex:1;padding:13px;background:transparent;color:var(--red);border:1px solid #4a1010;border-radius:10px;font-family:'Oswald',sans-serif;font-size:0.9rem;text-transform:uppercase;cursor:pointer;transition:background 0.15s;}
+.btn-reset:active{background:#120404;}
+.btn-hist{padding:13px 16px;background:var(--s2);color:var(--t2);border:1px solid var(--bd);border-radius:10px;font-family:'Roboto Mono',monospace;font-size:0.62rem;text-transform:uppercase;cursor:pointer;transition:all 0.15s;flex-shrink:0;}
+.btn-hist.ativo{background:var(--grn-d);color:var(--grn);border-color:var(--grn-m);}
+#ib{display:none;background:#0a1f10;border:1px solid var(--grn);border-radius:10px;padding:8px 12px;align-items:center;gap:8px;font-size:0.75rem;color:var(--t2);}
+#ib.show{display:flex;}
+#ib span{flex:1;line-height:1.4;}
+#ib strong{color:var(--grn);}
+.ib-y{background:var(--grn);color:#000;font-family:'Lilita One',cursive;font-size:0.75rem;border:none;border-radius:6px;padding:5px 9px;cursor:pointer;white-space:nowrap;}
+.ib-n{background:transparent;color:var(--t3);border:none;font-size:0.9rem;cursor:pointer;padding:3px;}
+.hidden{display:none!important;}
+.lbl{font-family:'Roboto Mono',monospace;font-size:0.6rem;text-transform:uppercase;color:var(--t3);}
+
+/* ═══ BUSCADOR DE ALIMENTOS v1.4 ═══ */
+.btn-busca{width:100%;padding:14px;background:linear-gradient(135deg,var(--grn-d),var(--prot-d));color:var(--grn);border:1px solid var(--grn-m);border-radius:12px;font-family:'Oswald',sans-serif;font-size:0.95rem;text-transform:uppercase;letter-spacing:0!important;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;}
+.btn-busca:active{transform:scale(0.98);}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;display:none;align-items:flex-end;}
+.modal-bg.show{display:flex;}
+.modal-box{width:100%;max-height:90vh;background:var(--s1);border-top:1px solid var(--bd);border-radius:18px 18px 0 0;display:flex;flex-direction:column;animation:slideUp 0.3s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-hdr{padding:16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.modal-titulo{font-family:'Lilita One',cursive;font-size:1.2rem;color:var(--grn);}
+.modal-x{background:var(--s2);border:1px solid var(--bd);color:var(--t2);width:32px;height:32px;border-radius:8px;font-size:1rem;cursor:pointer;}
+.modal-search{padding:12px 16px;border-bottom:1px solid var(--bd);}
+.modal-search input{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;color:var(--tx);font-family:'Lilita One',cursive;font-size:1rem;outline:none;}
+.modal-search input:focus{border-color:var(--grn);}
+.modal-lista{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;}
+.alimento-item{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.15s;}
+.alimento-item:active{background:var(--grn-d);border-color:var(--grn-m);}
+.alimento-nome{font-family:'Oswald',sans-serif;font-size:0.9rem;color:var(--tx);text-transform:uppercase;}
+.alimento-macros{font-family:'Roboto Mono',monospace;font-size:0.55rem;color:var(--t3);margin-top:2px;}
+.alimento-vazio{padding:24px;text-align:center;color:var(--t3);font-family:'Roboto Mono',monospace;font-size:0.7rem;}
+.modal-confirma{padding:14px 16px;border-top:1px solid var(--bd);background:var(--s2);}
+.confirma-nome{font-family:'Lilita One',cursive;font-size:1.1rem;color:var(--grn);margin-bottom:8px;}
+.confirma-input-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.confirma-input{flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;color:var(--tx);font-family:'Lilita One',cursive;font-size:1.3rem;text-align:center;outline:none;}
+.confirma-input:focus{border-color:var(--grn);}
+.confirma-unit{font-family:'Oswald',sans-serif;color:var(--t3);font-size:0.85rem;}
+.confirma-preview{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.confirma-prev-item{text-align:center;}
+.confirma-prev-val{font-family:'Lilita One',cursive;font-size:1.1rem;line-height:1;}
+.confirma-prev-lbl{font-family:'Roboto Mono',monospace;font-size:0.5rem;color:var(--t3);text-transform:uppercase;margin-top:2px;}
+.confirma-prev-item.cals .confirma-prev-val{color:var(--grn);}
+.confirma-prev-item.prot .confirma-prev-val{color:var(--prot);}
+.confirma-prev-item.carb .confirma-prev-val{color:var(--carb);}
+.confirma-prev-item.gord .confirma-prev-val{color:var(--gord);}
+.btn-confirma{width:100%;padding:14px;background:var(--grn);color:#000;border:none;border-radius:10px;font-family:'Lilita One',cursive;font-size:1.1rem;cursor:pointer;}
+.btn-confirma:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-quick-g{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.btn-quick-g button{flex:1;background:var(--bg);border:1px solid var(--bd);color:var(--t2);padding:8px;border-radius:8px;font-family:'Roboto Mono',monospace;font-size:0.7rem;cursor:pointer;}
+.btn-quick-g button:active{background:var(--grn-d);color:var(--grn);}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<div id="bridge-flash" class="bridge-flash">⟳ Sync</div>
+
+<div id="splash">
+  <svg class="sp-bolt" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="60,8 32,55 50,55 44,112 72,65 54,65 60,8" fill="none" stroke="#4ade80" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div class="sp-name">FUEL</div>
+  <div class="sp-sub">Combustível do Corpo</div>
+</div>
+<div class="app" id="main-app">
+  <div class="hdr">
+    <div class="hlogo">
+      <div class="hbolt">
+        <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="60,8 32,55 50,55 44,112 72,65 54,65 60,8" fill="none" stroke="#4ade80" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="hname">FUEL</span>
+      <span class="bridge-chip" id="bridge-chip">v1.4</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="hdate" id="hdr-date"></span>
+      <div class="hstreak" id="hdr-streak">🔥 0</div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div id="ib"><span>📲 <strong>Instalar?</strong></span><button class="ib-y" id="ib-y">Instalar</button><button class="ib-n" id="ib-n">✕</button></div>
+    <!-- RESUMO -->
+    <div class="card" id="card-resumo">
+      <div class="lbl">Resumo de hoje</div>
+      <div class="resumo-grid">
+        <div class="resumo-item agua">
+          <div class="resumo-val" id="r-agua">0</div>
+          <div class="resumo-meta">/ <span id="r-agua-meta">4000</span> ml</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-agua-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-agua-pct">0%</div>
+        </div>
+        <div class="resumo-item cals">
+          <div class="resumo-val" id="r-cals">0</div>
+          <div class="resumo-meta">/ <span id="r-cals-meta">3000</span> kcal</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-cals-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-cals-pct">0%</div>
+        </div>
+        <div class="resumo-item prot">
+          <div class="resumo-val" id="r-prot">0</div>
+          <div class="resumo-meta">/ <span id="r-prot-meta">189</span> g</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-prot-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-prot-pct">0%</div>
+        </div>
+        <div class="resumo-item carb">
+          <div class="resumo-val" id="r-carb">0</div>
+          <div class="resumo-meta">/ <span id="r-carb-meta">350</span> g</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-carb-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-carb-pct">0%</div>
+        </div>
+        <div class="resumo-item gord">
+          <div class="resumo-val" id="r-gord">0</div>
+          <div class="resumo-meta">/ <span id="r-gord-meta">80</span> g</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-gord-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-gord-pct">0%</div>
+        </div>
+        <div class="resumo-item cafe">
+          <div class="resumo-val" id="r-cafe">0</div>
+          <div class="resumo-meta"><span id="r-cafe-mg">0</span>mg / <span id="r-cafe-meta">400</span>mg</div>
+          <div class="resumo-bar"><div class="resumo-bar-fill" id="r-cafe-bar" style="width:0%"></div></div>
+          <div class="resumo-pct" id="r-cafe-pct">0%</div>
+        </div>
+      </div>
+    </div>
+    <!-- BUSCADOR DE ALIMENTOS v1.4 -->
+    <button class="btn-busca" id="btn-abrir-busca">🍽 Buscar Alimento</button>
+
+    <!-- ÁGUA -->
+    <div class="nc agua card" id="nc-agua">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">💧</div><div class="nc-name">Água</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-agua" value="4000" inputmode="numeric"> ml</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-agua">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-agua">4000</div>
+        <div class="nc-unit">ml</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-agua" style="width:0%;background:var(--agua)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="150">150ml</button>
+        <button class="qbtn" data-v="200">200ml</button>
+        <button class="qbtn" data-v="300">300ml</button>
+        <button class="qbtn" data-v="500">500ml</button>
+        <button class="qbtn" data-v="750">750ml</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-agua" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-agua">+</button>
+      </div>
+    </div>
+    <!-- CALORIAS -->
+    <div class="nc cals card" id="nc-cals">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">⚡</div><div class="nc-name">Calorias</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-cals" value="3000" inputmode="numeric"> kcal</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-cals">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-cals">3000</div>
+        <div class="nc-unit">kcal</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-cals" style="width:0%;background:var(--grn)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="100">100</button>
+        <button class="qbtn" data-v="200">200</button>
+        <button class="qbtn" data-v="300">300</button>
+        <button class="qbtn" data-v="500">500</button>
+        <button class="qbtn" data-v="700">700</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-cals" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-cals">+</button>
+      </div>
+    </div>
+    <!-- PROTEÍNA -->
+    <div class="nc prot card" id="nc-prot">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">🥩</div><div class="nc-name">Proteína</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-prot" value="189" inputmode="numeric"> g</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-prot">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-prot">189</div>
+        <div class="nc-unit">g</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-prot" style="width:0%;background:var(--prot)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="10">10g</button>
+        <button class="qbtn" data-v="20">20g</button>
+        <button class="qbtn" data-v="30">30g</button>
+        <button class="qbtn" data-v="40">40g</button>
+        <button class="qbtn" data-v="50">50g</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-prot" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-prot">+</button>
+      </div>
+    </div>
+    <!-- CARBOIDRATO -->
+    <div class="nc carb card" id="nc-carb">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">🍚</div><div class="nc-name">Carboidrato</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-carb" value="350" inputmode="numeric"> g</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-carb">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-carb">350</div>
+        <div class="nc-unit">g</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-carb" style="width:0%;background:var(--carb)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="20">20g</button>
+        <button class="qbtn" data-v="30">30g</button>
+        <button class="qbtn" data-v="50">50g</button>
+        <button class="qbtn" data-v="75">75g</button>
+        <button class="qbtn" data-v="100">100g</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-carb" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-carb">+</button>
+      </div>
+    </div>
+    <!-- GORDURA -->
+    <div class="nc gord card" id="nc-gord">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">🥑</div><div class="nc-name">Gordura</div></div>
+        <div class="nc-meta">Meta: <input type="number" class="nc-meta-input" id="meta-gord" value="80" inputmode="numeric"> g</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-gord">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-gord">80</div>
+        <div class="nc-unit">g</div>
+      </div>
+      <div class="nc-progbg"><div class="nc-progfill" id="prg-gord" style="width:0%;background:var(--gord)"></div></div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="5">5g</button>
+        <button class="qbtn" data-v="10">10g</button>
+        <button class="qbtn" data-v="15">15g</button>
+        <button class="qbtn" data-v="20">20g</button>
+        <button class="qbtn" data-v="30">30g</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-gord" placeholder="Quantidade" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-gord">+</button>
+      </div>
+    </div>
+
+    <!-- CAFÉ -->
+    <div class="nc cafe card" id="nc-cafe">
+      <div class="nc-top">
+        <div class="nc-left"><div class="nc-icon">☕</div><div class="nc-name">Café · em ml</div></div>
+        <div class="nc-meta">Limite: <input type="number" class="nc-meta-input" id="meta-cafe" value="400" inputmode="numeric"> mg</div>
+      </div>
+      <div class="cafe-mg-painel">
+        <div class="cafe-mg-row">
+          <div>
+            <div class="cafe-mg-val" id="cafe-mg-val">0</div>
+            <div class="cafe-mg-lbl">mg cafeína hoje</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="cafe-mg-meta">de <span id="cafe-mg-meta">400</span>mg</div>
+            <div class="cafe-mg-lbl">limite EFSA</div>
+          </div>
+        </div>
+        <div class="nc-progbg"><div class="nc-progfill" id="cafe-mg-bar" style="width:0%;background:var(--cafe)"></div></div>
+        <div class="cafe-mg-fonte">EFSA 2015 · 400mg/dia seguro · cálculo: ml × 0,6 (V60 / filtrado especialidade)</div>
+      </div>
+      <div class="nc-vals">
+        <div class="nc-cur" id="cur-cafe">0</div>
+        <div class="nc-sep">/</div>
+        <div class="nc-tgt" id="tgt-cafe">∞</div>
+        <div class="nc-unit">ml</div>
+      </div>
+      <div class="nc-quick">
+        <button class="qbtn" data-v="30">30ml</button>
+        <button class="qbtn" data-v="50">50ml</button>
+        <button class="qbtn" data-v="100">100ml</button>
+        <button class="qbtn" data-v="150">150ml</button>
+        <button class="qbtn" data-v="240">240ml</button>
+      </div>
+      <div class="nc-add">
+        <input type="number" class="nc-add-input" id="inp-cafe" placeholder="ml" inputmode="numeric">
+        <button class="nc-add-btn" id="btn-cafe">+</button>
+      </div>
+      <div class="cafe-ult-dose" id="cafe-ult-dose">Nenhuma dose registrada hoje.</div>
+      <div class="cafe-sleep" id="cafe-sleep">
+        <div class="cafe-sleep-hdr">
+          <div class="cafe-sleep-lbl">🌙 Pode dormir após</div>
+          <div class="cafe-sleep-icon" id="cafe-sleep-icon">😴</div>
+        </div>
+        <div class="cafe-sleep-hora" id="cafe-sleep-hora">--:--</div>
+        <div class="cafe-sleep-info" id="cafe-sleep-info">Adicione café para calcular.</div>
+        <button class="cafe-notif-btn" id="cafe-notif-btn">🔔 Avisar quando puder dormir</button>
+      </div>
+      <div class="cafe-fonte">Drake CL et al. J Clin Sleep Med 2013 · cafeína 6h antes de dormir reduz sono em &gt;1h</div>
+      <div class="cafe-nota" id="cafe-nota-extra">
+        Turno noturno: planeje a última dose conforme sua hora de dormir + 6h. Acima de 4 xícaras/dia compromete SWS.
+      </div>
+    </div>
+
+    <!-- HISTÓRICO 7 DIAS -->
+    <div class="card" id="card-hist">
+      <div class="lbl">Histórico — 7 dias</div>
+      <div class="hist-bars" id="hist-bars"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+        <div style="display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--agua)"></div>Água</div>
+        <div style="display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--grn)"></div>Calorias</div>
+        <div style="display:flex;align-items:center;gap:4px;font-family:'Roboto Mono',monospace;font-size:0.58rem;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--prot)"></div>Proteína</div>
+      </div>
+    </div>
+    <!-- ANÁLISE -->
+    <div class="card">
+      <div class="ai-hdr">
+        <div class="ai-icon">⚡</div>
+        <div><div class="ai-titulo">Análise Nutricional</div><div class="ai-fonte">Dados reais · Ciência</div></div>
+      </div>
+      <div class="ai-body" id="ai-body">
+        <span style="color:var(--t3);font-size:0.75rem;">Adicione seus dados do dia e clique em Analisar para receber feedback personalizado.</span>
+      </div>
+      <button class="btn-ai" id="btn-ai">Analisar Meu Dia</button>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn-reset" id="btn-reset">Reset do Dia</button>
+    <button class="btn-hist" id="btn-hist">Histórico</button>
+  </div>
+</div>
+
+<!-- MODAL BUSCA DE ALIMENTOS v1.4 -->
+<div class="modal-bg" id="modal-busca">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div class="modal-titulo">🍽 Buscar Alimento</div>
+      <button class="modal-x" id="modal-fechar">✕</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="busca-input" placeholder="Ex: arroz, frango, banana..." autocomplete="off">
+    </div>
+    <div class="modal-lista" id="modal-lista"></div>
+    <div class="modal-confirma hidden" id="modal-confirma">
+      <div class="confirma-nome" id="confirma-nome">--</div>
+      <div class="btn-quick-g">
+        <button data-g="50">50g</button>
+        <button data-g="100">100g</button>
+        <button data-g="150">150g</button>
+        <button data-g="200">200g</button>
+        <button data-g="300">300g</button>
+      </div>
+      <div class="confirma-input-row">
+        <input type="number" class="confirma-input" id="confirma-input" placeholder="Gramas" inputmode="numeric">
+        <span class="confirma-unit">g</span>
+      </div>
+      <div class="confirma-preview">
+        <div class="confirma-prev-item cals">
+          <div class="confirma-prev-val" id="prev-cals">0</div>
+          <div class="confirma-prev-lbl">kcal</div>
+        </div>
+        <div class="confirma-prev-item prot">
+          <div class="confirma-prev-val" id="prev-prot">0</div>
+          <div class="confirma-prev-lbl">prot g</div>
+        </div>
+        <div class="confirma-prev-item carb">
+          <div class="confirma-prev-val" id="prev-carb">0</div>
+          <div class="confirma-prev-lbl">carb g</div>
+        </div>
+        <div class="confirma-prev-item gord">
+          <div class="confirma-prev-val" id="prev-gord">0</div>
+          <div class="confirma-prev-lbl">gord g</div>
+        </div>
+      </div>
+      <button class="btn-confirma" id="btn-confirma">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BioBridge -->
+<script src="bio-bridge.js"></script>
+
+<script>
+function initParticles(){
+  var canvas=document.getElementById('bg-canvas');if(!canvas)return;
+  var ctx=canvas.getContext('2d');var W,H;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  var mols=[];var N=16;
+  var CORS2=['#4ade80','#38bdf8','#a78bfa','#fb923c','#fbbf24','#d97706'];
+  for(var i=0;i<N;i++){
+    mols.push({
+      x:Math.random()*1400,y:Math.random()*2000,
+      vx:(Math.random()-0.5)*0.14,vy:(Math.random()-0.5)*0.12,
+      r:Math.random()*2+1.2,
+      pulse:Math.random()*Math.PI*2,ps:0.008+Math.random()*0.012,
+      a:0.04+Math.random()*0.06,
+      cor:CORS2[Math.floor(Math.random()*CORS2.length)],
+    });
+  }
+  function getCardRects(){
+    var rects=[];
+    document.querySelectorAll('.card,.nc,.hdr,.ftr').forEach(function(el){
+      var r=el.getBoundingClientRect();if(r.width>0&&r.height>0)rects.push(r);
+    });
+    return rects;
+  }
+  function inCard(px,py,rects){
+    for(var i=0;i<rects.length;i++){var r=rects[i];if(px>r.left-16&&px<r.right+16&&py>r.top-16&&py<r.bottom+16)return true;}
+    return false;
+  }
+  function draw(){
+    if(document.hidden){requestAnimationFrame(draw);return;}
+    ctx.clearRect(0,0,W,H);
+    var rects=getCardRects();
+    mols.forEach(function(m){
+      m.x+=m.vx;m.y+=m.vy;m.pulse+=m.ps;
+      if(m.x<-30)m.x=W+30;if(m.x>W+30)m.x=-30;
+      if(m.y<-30)m.y=H+30;if(m.y>H+30)m.y=-30;
+      if(inCard(m.x,m.y,rects))return;
+      var alpha=m.a*(0.6+Math.sin(m.pulse)*0.4);
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);
+      ctx.fillStyle=m.cor+Math.floor(alpha*255).toString(16).padStart(2,'0');ctx.fill();
+      var grd=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,m.r*4);
+      grd.addColorStop(0,m.cor+Math.floor(alpha*0.5*255).toString(16).padStart(2,'0'));
+      grd.addColorStop(1,m.cor+'00');
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r*4,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+      mols.forEach(function(m2){
+        if(m===m2)return;
+        var dx=m2.x-m.x,dy=m2.y-m.y,dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<80&&!inCard(m2.x,m2.y,rects)){
+          var la=alpha*(1-dist/80)*0.4;
+          ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(m2.x,m2.y);
+          ctx.strokeStyle=m.cor+Math.floor(la*255).toString(16).padStart(2,'0');
+          ctx.lineWidth=0.5;ctx.stroke();
+        }
+      });
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+var V60_MG_POR_ML=0.6;
+var NUTS=['agua','cals','prot','carb','gord','cafe'];
+var DEFAULTS={agua:4000,cals:3000,prot:189,carb:350,gord:80,cafe:400};
+var UNITS={agua:'ml',cals:'kcal',prot:'g',carb:'g',gord:'g',cafe:'mg'};
+var CORS={agua:'var(--agua)',cals:'var(--grn)',prot:'var(--prot)',carb:'var(--carb)',gord:'var(--gord)',cafe:'var(--cafe)'};
+
+function getToday(){return new Date().toISOString().slice(0,10);}
+function getCafeConc(){return V60_MG_POR_ML;}
+function getCafeMl(){return parseFloat(localStorage.getItem('fuel_cafe_ml'))||0;}
+function setCafeMl(v){localStorage.setItem('fuel_cafe_ml',v);}
+function getCafeMg(){return Math.round(getCafeMl()*getCafeConc());}
+function getUltDose(){return parseInt(localStorage.getItem('fuel_cafe_ult'))||0;}
+function setUltDose(ts){localStorage.setItem('fuel_cafe_ult',ts);}
+function getNotifAgendada(){return parseInt(localStorage.getItem('fuel_cafe_notif'))||0;}
+function setNotifAgendada(ts){localStorage.setItem('fuel_cafe_notif',ts);}
+
+function saveHistoryDay(date){
+  try{
+    var hist=JSON.parse(localStorage.getItem('fuel_hist')||'{}');
+    var day={};
+    NUTS.forEach(function(n){
+      if(n==='cafe'){
+        day.cafe=getCafeMg();
+        day.cafe_ml=getCafeMl();
+        day.cafe_meta=parseInt(localStorage.getItem('fuel_meta_cafe'))||DEFAULTS.cafe;
+      } else {
+        day[n]=parseInt(localStorage.getItem('fuel_cur_'+n))||0;
+        day[n+'_meta']=parseInt(localStorage.getItem('fuel_meta_'+n))||DEFAULTS[n];
+      }
+    });
+    hist[date]=day;
+    var keys=Object.keys(hist).sort().slice(-30);
+    var trimmed={};keys.forEach(function(k){trimmed[k]=hist[k];});
+    localStorage.setItem('fuel_hist',JSON.stringify(trimmed));
+  }catch(e){}
+}
+function loadHistory(){try{return JSON.parse(localStorage.getItem('fuel_hist')||'{}');}catch(e){return{};}}
+function getVal(n){
+  if(n==='cafe')return getCafeMl();
+  return parseInt(localStorage.getItem('fuel_cur_'+n))||0;
+}
+function getMeta(n){return parseInt(localStorage.getItem('fuel_meta_'+n))||DEFAULTS[n];}
+function setVal(n,v){
+  if(n==='cafe'){setCafeMl(v);return;}
+  localStorage.setItem('fuel_cur_'+n,v);
+}
+function setMeta(n,v){localStorage.setItem('fuel_meta_'+n,v);}
+
+// ══════════════════════════════════════════════════════
+// BRIDGE — envia dados pro BioMetrics com debounce
+// Só envia água, calorias, proteína e carboidrato
+// (BioMetrics não rastreia gordura nem café)
+// ══════════════════════════════════════════════════════
+var bridgeTimer = null;
+var flashTimer = null;
+
+function bridgeFlash(msg){
+  var el = document.getElementById('bridge-flash');
+  if(!el) return;
+  el.textContent = '⟳ ' + msg;
+  el.classList.add('show');
+  if(flashTimer) clearTimeout(flashTimer);
+  flashTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
+
+function fmtHoraCurta(ts){
+  var d = new Date(ts);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function bridgePushDebounced(){
+  if(bridgeTimer) clearTimeout(bridgeTimer);
+  bridgeTimer = setTimeout(function(){
+    if(typeof BioBridge === 'undefined') return;
+    var enviou = BioBridge.push('fuel', {
+      kcal: getVal('cals'),
+      prot: getVal('prot'),
+      carb: getVal('carb'),
+      agua: getVal('agua')
+    });
+    if(enviou){
+      var chip = document.getElementById('bridge-chip');
+      if(chip){
+        chip.classList.add('ok');
+        chip.textContent = '🔗 ' + fmtHoraCurta(Date.now());
+      }
+      bridgeFlash('Enviado pro BioMetrics');
+    }
+  }, 800);
+}
+
+function atualizarBridgeChip(){
+  var chip = document.getElementById('bridge-chip');
+  if(!chip) return;
+  if(typeof BioBridge !== 'undefined'){
+    chip.classList.add('ok');
+    chip.textContent = 'BRIDGE';
+  }
+}
+
+function updateNut(n){
+  var cur=getVal(n),meta=getMeta(n);
+  var elCur=document.getElementById('cur-'+n);
+
+  if(n==='cafe'){
+    var mg=getCafeMg();
+    var metaMg=meta;
+    var pctMg=Math.min(mg/metaMg,1)*100;
+
+    if(elCur)elCur.textContent=cur;
+    var elTgt=document.getElementById('tgt-cafe');if(elTgt)elTgt.textContent='∞';
+
+    var mgVal=document.getElementById('cafe-mg-val');
+    if(mgVal){
+      mgVal.textContent=mg;
+      mgVal.classList.remove('warn','over');
+      if(mg>metaMg)mgVal.classList.add('over');
+      else if(mg>metaMg*0.75)mgVal.classList.add('warn');
+    }
+    var mgMeta=document.getElementById('cafe-mg-meta');if(mgMeta)mgMeta.textContent=metaMg;
+    var mgBar=document.getElementById('cafe-mg-bar');
+    if(mgBar){
+      mgBar.style.width=Math.min(pctMg,100)+'%';
+      if(mg>metaMg)mgBar.style.background='var(--red)';
+      else if(pctMg>=75)mgBar.style.background='var(--yel)';
+      else mgBar.style.background='var(--cafe)';
+    }
+
+    var rEl=document.getElementById('r-cafe');if(rEl)rEl.textContent=cur;
+    var rMg=document.getElementById('r-cafe-mg');if(rMg)rMg.textContent=mg;
+    var rMeta=document.getElementById('r-cafe-meta');if(rMeta)rMeta.textContent=metaMg;
+    var rBar=document.getElementById('r-cafe-bar');if(rBar)rBar.style.width=Math.min(pctMg,100)+'%';
+    var rPct=document.getElementById('r-cafe-pct');if(rPct)rPct.textContent=Math.round(pctMg)+'%';
+
+    updateSleepWindow();
+    return;
+  }
+
+  var pct=Math.min(cur/meta,1)*100;
+  if(elCur){elCur.textContent=cur;elCur.classList.toggle('over',cur>meta);}
+  var elTgt=document.getElementById('tgt-'+n);if(elTgt)elTgt.textContent=meta;
+  var elMeta=document.getElementById('meta-'+n);if(elMeta)elMeta.value=meta;
+  var prg=document.getElementById('prg-'+n);
+  if(prg){
+    prg.style.width=pct+'%';
+    if(cur>meta)prg.style.background='var(--red)';
+    else if(pct>=85)prg.style.background='var(--yel)';
+    else prg.style.background=CORS[n];
+  }
+  var rEl=document.getElementById('r-'+n);if(rEl)rEl.textContent=cur;
+  var rMeta=document.getElementById('r-'+n+'-meta');if(rMeta)rMeta.textContent=meta;
+  var rBar=document.getElementById('r-'+n+'-bar');if(rBar)rBar.style.width=pct+'%';
+  var rPct=document.getElementById('r-'+n+'-pct');if(rPct)rPct.textContent=Math.round(pct)+'%';
+}
+
+function fmtHora(ts){
+  var d=new Date(ts);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function updateSleepWindow(){
+  var ult=getUltDose();
+  var sleep=document.getElementById('cafe-sleep');
+  var hora=document.getElementById('cafe-sleep-hora');
+  var info=document.getElementById('cafe-sleep-info');
+  var icon=document.getElementById('cafe-sleep-icon');
+  var ultEl=document.getElementById('cafe-ult-dose');
+  var notifBtn=document.getElementById('cafe-notif-btn');
+
+  if(!ult){
+    if(hora)hora.textContent='--:--';
+    if(info)info.textContent='Adicione café para calcular o horário ideal.';
+    if(icon)icon.textContent='😴';
+    if(ultEl)ultEl.textContent='Nenhuma dose registrada hoje.';
+    if(sleep)sleep.classList.remove('alert');
+    if(notifBtn){notifBtn.style.display='none';}
+    return;
+  }
+
+  var ideal=ult+6*60*60*1000;
+  var agora=Date.now();
+  var faltaMs=ideal-agora;
+  var faltaMin=Math.round(faltaMs/60000);
+
+  if(hora)hora.textContent=fmtHora(ideal);
+  if(ultEl)ultEl.innerHTML='Última dose: <strong>'+fmtHora(ult)+'</strong>';
+
+  if(faltaMin<=0){
+    if(info)info.textContent='✓ Janela liberada · cafeína já abaixou para níveis seguros.';
+    if(icon)icon.textContent='✓';
+    if(sleep)sleep.classList.remove('alert');
+  } else {
+    var h=Math.floor(faltaMin/60);
+    var m=faltaMin%60;
+    var faltaStr=h>0?(h+'h '+m+'min'):(m+'min');
+    if(info)info.textContent='Aguarde '+faltaStr+' · cafeína prejudica SWS dentro dessa janela.';
+    if(icon)icon.textContent='⏳';
+    if(sleep)sleep.classList.add('alert');
+  }
+
+  if(notifBtn){
+    notifBtn.style.display='flex';
+    var agendada=getNotifAgendada();
+    if(agendada===ideal&&faltaMs>0){
+      notifBtn.classList.add('ativo');
+      notifBtn.innerHTML='🔔 Aviso agendado para '+fmtHora(ideal);
+    } else {
+      notifBtn.classList.remove('ativo');
+      notifBtn.innerHTML='🔔 Avisar quando puder dormir';
+    }
+    if(!('Notification' in window)||Notification.permission==='denied'){
+      notifBtn.classList.add('bloqueado');
+      notifBtn.innerHTML='🔕 Notificação bloqueada nas configurações';
+    }
+  }
+}
+
+var notifTimer=null;
+function agendarNotificacaoSono(){
+  if(!('Notification' in window)){
+    alert('Seu navegador não suporta notificações.');
+    return;
+  }
+  var ult=getUltDose();
+  if(!ult)return;
+  var ideal=ult+6*60*60*1000;
+  var faltaMs=ideal-Date.now();
+  if(faltaMs<=0){
+    alert('A janela já está liberada — você já pode dormir.');
+    return;
+  }
+  if(Notification.permission==='default'){
+    Notification.requestPermission().then(function(p){
+      if(p==='granted')agendarNotificacaoSono();
+      else updateSleepWindow();
+    });
+    return;
+  }
+  if(Notification.permission==='denied'){
+    alert('Notificações bloqueadas. Permita nas configurações do navegador.');
+    updateSleepWindow();
+    return;
+  }
+  if(notifTimer){clearTimeout(notifTimer);notifTimer=null;}
+  setNotifAgendada(ideal);
+  notifTimer=setTimeout(function(){
+    try{
+      new Notification('☕ Cafeína baixou',{
+        body:'Já se passaram 6h desde sua última dose. Boa hora para dormir — SWS protegido.',
+        icon:'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="%23d97706"/><text x="50" y="68" font-size="56" text-anchor="middle">☕</text></svg>'),
+        tag:'fuel-cafe-sleep',
+        requireInteraction:true,
+      });
+    }catch(e){}
+    setNotifAgendada(0);
+    updateSleepWindow();
+  },faltaMs);
+  updateSleepWindow();
+}
+
+function cancelarNotificacao(){
+  if(notifTimer){clearTimeout(notifTimer);notifTimer=null;}
+  setNotifAgendada(0);
+  updateSleepWindow();
+}
+
+function setupNut(n){
+  var btn=document.getElementById('btn-'+n);
+  var inp=document.getElementById('inp-'+n);
+  if(btn&&inp){
+    btn.addEventListener('click',function(){
+      var v=parseFloat(inp.value);
+      if(!isNaN(v)&&v>0){
+        setVal(n,getVal(n)+v);
+        if(n==='cafe')setUltDose(Date.now());
+        inp.value='';updateNut(n);animatePulse('cur-'+n);
+        bridgePushDebounced(); // ← envia pro BioMetrics
+      }
+    });
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter')btn.click();});
+  }
+  var card=document.getElementById('nc-'+n);
+  if(card){
+    card.querySelectorAll('.qbtn').forEach(function(q){
+      q.addEventListener('click',function(){
+        var v=parseFloat(q.dataset.v);
+        if(!isNaN(v)){
+          setVal(n,getVal(n)+v);
+          if(n==='cafe')setUltDose(Date.now());
+          updateNut(n);animatePulse('cur-'+n);
+          bridgePushDebounced(); // ← envia pro BioMetrics
+        }
+      });
+    });
+  }
+  var metaInput=document.getElementById('meta-'+n);
+  if(metaInput){
+    metaInput.addEventListener('input',function(){
+      var v=parseInt(metaInput.value);
+      if(!isNaN(v)&&v>0){setMeta(n,v);updateNut(n);}
+    });
+  }
+  updateNut(n);
+}
+function animatePulse(id){
+  var el=document.getElementById(id);if(!el)return;
+  el.style.transition='transform 0.15s ease';
+  el.style.transform='scale(1.15)';
+  setTimeout(function(){el.style.transform='scale(1)';},150);
+}
+function calcStreak(){
+  var hist=loadHistory(),streak=0;
+  for(var i=1;i<=365;i++){
+    var d=new Date();d.setDate(d.getDate()-i);
+    var k=d.toISOString().slice(0,10),day=hist[k];
+    if(!day)break;
+    var completed=NUTS.filter(function(n){
+      if(n==='cafe')return day.cafe<=(day.cafe_meta||DEFAULTS.cafe);
+      return day[n]>=(day[n+'_meta']||DEFAULTS[n])*0.8;
+    }).length;
+    if(completed>=3)streak++;else break;
+  }
+  var el=document.getElementById('hdr-streak');if(el)el.textContent='🔥 '+streak;
+  return streak;
+}
+function renderHist(){
+  var bars=document.getElementById('hist-bars');if(!bars)return;
+  bars.innerHTML='';
+  var hist=loadHistory(),today=getToday(),days=[];
+  for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10));}
+  days.forEach(function(date){
+    var day=hist[date]||null,isToday=date===today;
+    var wrap=document.createElement('div');wrap.className='hist-bar-wrap';
+    var bg=document.createElement('div');bg.className='hist-bar-bg';
+    bg.style.position='relative';bg.style.flexDirection='column';bg.style.justifyContent='flex-end';
+    if(day){
+      var aguaPct=Math.min(day.agua/(day.agua_meta||DEFAULTS.agua),1);
+      var calsPct=Math.min(day.cals/(day.cals_meta||DEFAULTS.cals),1);
+      var protPct=Math.min(day.prot/(day.prot_meta||DEFAULTS.prot),1);
+      var avg=(aguaPct+calsPct+protPct)/3;
+      var fill=document.createElement('div');
+      fill.className='hist-bar-fill';
+      fill.style.height=Math.round(avg*100)+'%';
+      fill.style.background=avg>=0.8?'var(--grn)':avg>=0.5?'var(--yel)':'var(--red)';
+      bg.appendChild(fill);
+    }
+    var lbl=document.createElement('div');
+    lbl.className='hist-bar-lbl'+(isToday?' today':'');
+    var dd=new Date(date+'T12:00:00');
+    lbl.textContent=['D','S','T','Q','Q','S','S'][dd.getDay()];
+    wrap.appendChild(bg);wrap.appendChild(lbl);bars.appendChild(wrap);
+  });
+}
+
+function generateAI(){
+  var body=document.getElementById('ai-body');if(!body)return;
+  body.innerHTML='<div class="ai-load"><div class="ai-dots"><span></span><span></span><span></span></div> Analisando marcadores nutricionais...</div>';
+  var vals={},metas={};
+  NUTS.forEach(function(n){vals[n]=getVal(n);metas[n]=getMeta(n);});
+  var cafeMg=getCafeMg();
+  var pcts={};NUTS.forEach(function(n){
+    if(n==='cafe')pcts[n]=Math.round(cafeMg/metas.cafe*100);
+    else pcts[n]=Math.round(vals[n]/metas[n]*100);
+  });
+  var hist=loadHistory();
+  var histKeys=Object.keys(hist).sort().slice(-7);
+  var avgProt=histKeys.length?Math.round(histKeys.reduce(function(a,k){return a+(hist[k].prot||0);},0)/histKeys.length):0;
+  setTimeout(function(){
+    var txt='';
+    if(pcts.prot>=100) txt+='Proteína: '+vals.prot+'g ('+pcts.prot+'%). Anabolismo protegido. Refeições de 40-50g max. ';
+    else if(pcts.prot>=70) txt+='Proteína: '+vals.prot+'g ('+pcts.prot+'%). Adicione 30-40g para fechar a meta. ';
+    else txt+='Proteína: '+vals.prot+'g ('+pcts.prot+'%). Risco de catabolismo. Meta: '+metas.prot+'g hoje. ';
+    if(pcts.agua>=90) txt+='Água: '+vals.agua+'ml — hidratação ótima. ';
+    else if(pcts.agua>=60) txt+='Água: '+vals.agua+'ml. Falta líquido — mantenha acima de 3.500ml. ';
+    else txt+='Água: '+vals.agua+'ml — risco de lesão. 500ml antes do turno, 250ml/hora. ';
+    if(pcts.cals<70) txt+='Calorias: '+vals.cals+'kcal ('+pcts.cals+'%). Déficit — carboidrato antes do turno. ';
+    else if(pcts.cals>130) txt+='Calorias: '+vals.cals+'kcal ('+pcts.cals+'%). Superávit — proteína em dia = hipertrofia. ';
+    if(pcts.carb<60) txt+='Carbo: '+pcts.carb+'% da meta. 40-60g complexo 1-2h antes do turno. ';
+    if(vals.cafe>0){
+      var nomeTipo='V60';
+      if(cafeMg>400) txt+='Café: '+vals.cafe+'ml de '+nomeTipo+' = '+cafeMg+'mg cafeína. Acima do limite EFSA (400mg/dia) — reduza amanhã. ';
+      else if(cafeMg>300) txt+='Café: '+cafeMg+'mg cafeína (limite 400mg). Próximo do teto — respeite a janela de 6h antes de dormir. ';
+      else if(cafeMg>200) txt+='Café: '+cafeMg+'mg cafeína. Uso moderado. ';
+      else txt+='Café: '+cafeMg+'mg — uso controlado. ';
+      var ult=getUltDose();
+      if(ult){
+        var idealStr=fmtHora(ult+6*60*60*1000);
+        txt+='Janela de sono livre após '+idealStr+' (Drake 2013). ';
+      }
+    }
+    if(histKeys.length>=3&&avgProt<metas.prot*0.8) txt+='Média histórica: '+avgProt+'g proteína — abaixo da meta. Prioridade: aumentar proteína. ';
+    if(pcts.prot<80) txt+='Regra do turno noturno: carbo baixo IG durante o trabalho + proteína no pós-turno.';
+    else if(pcts.agua<70) txt+='Prepare 2 garrafas de 1L antes de cada turno. Hidratação proativa é mais eficaz que reativa.';
+    else txt+='Distribua a proteína em 4-5 janelas ao longo das 24h. Síntese proteica dura 3-5h por refeição.';
+    body.style.opacity='0';body.style.transition='opacity 0.5s';
+    setTimeout(function(){body.textContent=txt;body.style.opacity='1';},400);
+  },1600);
+}
+
+document.getElementById('btn-reset').addEventListener('click',function(){
+  if(!confirm('Resetar todos os dados de hoje?'))return;
+  saveHistoryDay(getToday());
+  NUTS.forEach(function(n){setVal(n,0);});
+  setCafeMl(0);
+  setUltDose(0);
+  cancelarNotificacao();
+  NUTS.forEach(function(n){updateNut(n);});
+  renderHist();
+  bridgePushDebounced(); // envia zeros pro BioMetrics
 });
 
-self.addEventListener('activate',e=>{
-  e.waitUntil(
-    caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))))
-      .then(()=>self.clients.claim())
-  );
+function updateDate(){
+  var el=document.getElementById('hdr-date');
+  var n=new Date();var dias=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+  if(el)el.textContent=dias[n.getDay()]+' '+String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0');
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    var host=window.location.hostname;
+    if(host==='localhost'||host.indexOf('github.io')>=0||host.indexOf('127.0.0.1')>=0){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    }
+  });
+}
+var dPrm=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dPrm=e;document.getElementById('ib').classList.add('show');});
+document.getElementById('ib-y').addEventListener('click',async function(){document.getElementById('ib').classList.remove('show');if(dPrm){dPrm.prompt();await dPrm.userChoice;dPrm=null;}});
+document.getElementById('ib-n').addEventListener('click',function(){document.getElementById('ib').classList.remove('show');});
+window.addEventListener('appinstalled',function(){document.getElementById('ib').classList.remove('show');});
+
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    var sp=document.getElementById('splash');
+    sp.classList.add('hide');setTimeout(function(){if(sp)sp.remove();},1000);
+  },2000);
 });
 
-self.addEventListener('fetch',e=>{
-  e.respondWith(
-    fetch(e.request).then(r=>{
-      const c=r.clone();
-      caches.open(CACHE).then(cache=>cache.put(e.request,c));
-      return r;
-    }).catch(()=>caches.match(e.request))
-  );
+document.getElementById('btn-ai').addEventListener('click',generateAI);
+
+document.getElementById('cafe-notif-btn').addEventListener('click',function(){
+  if(this.classList.contains('bloqueado'))return;
+  if(this.classList.contains('ativo')){
+    if(confirm('Cancelar o aviso agendado?'))cancelarNotificacao();
+  } else {
+    agendarNotificacaoSono();
+  }
 });
+
+setInterval(updateSleepWindow,30000);
+
+// ═══════════════════════════════════════════════════════════
+// BANCO DE ALIMENTOS v1.4 — valores TACO (UNICAMP) por 100g
+// ═══════════════════════════════════════════════════════════
+var ALIMENTOS = [
+  // Carboidratos básicos
+  {n:"Pão francês",            kcal:300, prot:8.0,  carb:58.6, gord:3.1},
+  {n:"Arroz branco cozido",    kcal:128, prot:2.5,  carb:28.1, gord:0.2},
+  {n:"Feijão carioca cozido",  kcal:76,  prot:4.8,  carb:13.6, gord:0.5},
+  {n:"Batata cozida",          kcal:86,  prot:1.5,  carb:19.0, gord:0.1},
+  {n:"Batata doce cozida",     kcal:86,  prot:1.6,  carb:20.0, gord:0.1},
+  {n:"Pão de queijo",          kcal:286, prot:5.0,  carb:39.0, gord:13.0},
+  // Proteínas (carnes/ovos)
+  {n:"Carne moída cozida",     kcal:212, prot:27.0, carb:0,    gord:11.3},
+  {n:"Bife (alcatra grelhada)",kcal:219, prot:35.9, carb:0,    gord:7.3},
+  {n:"Coração de galinha",     kcal:153, prot:16.0, carb:0,    gord:9.3},
+  {n:"Fígado bovino frito",    kcal:235, prot:27.7, carb:5.9,  gord:11.0},
+  {n:"Frango (peito grelhado)",kcal:159, prot:32.0, carb:0,    gord:2.5},
+  {n:"Peixe (tilápia grelhada)",kcal:96, prot:20.1, carb:0,    gord:1.7},
+  {n:"Carne seca",             kcal:311, prot:38.0, carb:0,    gord:17.0},
+  {n:"Ovo cozido",             kcal:146, prot:13.3, carb:0.6,  gord:9.5},
+  // Gorduras
+  {n:"Margarina",              kcal:596, prot:0.7,  carb:0.6,  gord:65.6},
+  {n:"Manteiga",               kcal:726, prot:0.4,  carb:0.06, gord:82.4},
+  {n:"Maionese",               kcal:384, prot:0.4,  carb:2.7,  gord:41.0},
+  // Frutas
+  {n:"Banana prata",           kcal:98,  prot:1.2,  carb:26.0, gord:0.1},
+  {n:"Maçã",                   kcal:56,  prot:0.3,  carb:15.2, gord:0.4},
+  {n:"Pera",                   kcal:53,  prot:0.3,  carb:14.0, gord:0.1},
+  {n:"Laranja",                kcal:47,  prot:1.0,  carb:11.5, gord:0.1},
+  {n:"Limão (suco)",           kcal:32,  prot:1.1,  carb:7.1,  gord:0.5},
+  {n:"Melancia",               kcal:30,  prot:0.6,  carb:7.6,  gord:0.2},
+  {n:"Uva",                    kcal:49,  prot:0.4,  carb:12.0, gord:0.1},
+  {n:"Morango",                kcal:33,  prot:0.7,  carb:7.7,  gord:0.3},
+  {n:"Coco (polpa)",           kcal:354, prot:3.3,  carb:15.0, gord:33.0},
+  // Vegetais
+  {n:"Salada (alface + tomate)",kcal:14, prot:1.1,  carb:2.5,  gord:0.2},
+  {n:"Couve refogada",         kcal:28,  prot:2.8,  carb:5.0,  gord:0.3},
+  {n:"Pepino",                 kcal:12,  prot:0.9,  carb:2.1,  gord:0.1},
+  {n:"Cenoura",                kcal:41,  prot:0.9,  carb:9.6,  gord:0.2},
+  // Lanches/Doces
+  {n:"Bolacha recheada",       kcal:472, prot:5.0,  carb:71.0, gord:19.0},
+  {n:"Chocolate ao leite",     kcal:540, prot:7.0,  carb:56.0, gord:31.0},
+  {n:"Paçoca",                 kcal:478, prot:12.6, carb:50.0, gord:24.0},
+  {n:"Barra de chocolate c/ amendoim", kcal:488, prot:9.7,  carb:56.0, gord:24.0},
+  {n:"Pipoca com óleo",        kcal:448, prot:9.7,  carb:56.0, gord:20.0},
+  {n:"Bolo de chocolate",      kcal:365, prot:5.0,  carb:58.0, gord:12.0},
+  // Refeições combinadas
+  {n:"Pizza muzzarela",        kcal:251, prot:12.0, carb:30.0, gord:9.0},
+  {n:"X-Salada (hambúrguer)",  kcal:234, prot:14.0, carb:22.0, gord:10.0},
+];
+
+// ─── Normaliza pra busca (sem acentos, minúsculo) ───
+function normalizar(s){
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9 ]/g,'');
+}
+
+var alimentoSelecionado = null;
+
+function filtrarAlimentos(termo){
+  var t = normalizar(termo);
+  if(!t) return ALIMENTOS;
+  return ALIMENTOS.filter(function(a){
+    return normalizar(a.n).indexOf(t) >= 0;
+  });
+}
+
+function renderListaAlimentos(termo){
+  var lista = document.getElementById('modal-lista');
+  if(!lista) return;
+  var filtrados = filtrarAlimentos(termo);
+  if(filtrados.length === 0){
+    lista.innerHTML = '<div class="alimento-vazio">Nenhum alimento encontrado.<br>Tente "arroz", "frango", "banana"...</div>';
+    return;
+  }
+  lista.innerHTML = '';
+  filtrados.forEach(function(a,idx){
+    var item = document.createElement('div');
+    item.className = 'alimento-item';
+    item.innerHTML = '<div>'+
+      '<div class="alimento-nome">'+a.n+'</div>'+
+      '<div class="alimento-macros">'+a.kcal+' kcal · '+a.prot+'g prot · '+a.carb+'g carb · '+a.gord+'g gord (por 100g)</div>'+
+      '</div>';
+    item.addEventListener('click',function(){ selecionarAlimento(a); });
+    lista.appendChild(item);
+  });
+}
+
+function selecionarAlimento(a){
+  alimentoSelecionado = a;
+  document.getElementById('modal-confirma').classList.remove('hidden');
+  document.getElementById('confirma-nome').textContent = a.n;
+  document.getElementById('confirma-input').value = '';
+  document.getElementById('confirma-input').focus();
+  atualizarPreview(0);
+  // Scroll pra ver o card de confirmação
+  setTimeout(function(){
+    document.getElementById('modal-confirma').scrollIntoView({behavior:'smooth',block:'end'});
+  },100);
+}
+
+function atualizarPreview(g){
+  if(!alimentoSelecionado) return;
+  var f = g / 100;
+  document.getElementById('prev-cals').textContent = Math.round(alimentoSelecionado.kcal * f);
+  document.getElementById('prev-prot').textContent = (alimentoSelecionado.prot * f).toFixed(1);
+  document.getElementById('prev-carb').textContent = (alimentoSelecionado.carb * f).toFixed(1);
+  document.getElementById('prev-gord').textContent = (alimentoSelecionado.gord * f).toFixed(1);
+  document.getElementById('btn-confirma').disabled = !(g > 0);
+}
+
+function confirmarAlimento(){
+  if(!alimentoSelecionado) return;
+  var g = parseFloat(document.getElementById('confirma-input').value);
+  if(isNaN(g) || g <= 0) return;
+  var f = g / 100;
+  var kcal = Math.round(alimentoSelecionado.kcal * f);
+  var prot = Math.round(alimentoSelecionado.prot * f * 10) / 10;
+  var carb = Math.round(alimentoSelecionado.carb * f * 10) / 10;
+  var gord = Math.round(alimentoSelecionado.gord * f * 10) / 10;
+  // Adiciona aos totais
+  setVal('cals', getVal('cals') + kcal);
+  setVal('prot', getVal('prot') + prot);
+  setVal('carb', getVal('carb') + carb);
+  setVal('gord', getVal('gord') + gord);
+  // Atualiza UI
+  ['cals','prot','carb','gord'].forEach(function(n){
+    updateNut(n);
+    animatePulse('cur-'+n);
+  });
+  // Envia pro BioMetrics (debounce)
+  bridgePushDebounced();
+  // Feedback
+  bridgeFlash(alimentoSelecionado.n + ' (' + g + 'g)');
+  // Fecha modal
+  fecharModal();
+}
+
+function abrirModal(){
+  document.getElementById('modal-busca').classList.add('show');
+  document.getElementById('modal-confirma').classList.add('hidden');
+  document.getElementById('busca-input').value = '';
+  alimentoSelecionado = null;
+  renderListaAlimentos('');
+  setTimeout(function(){ document.getElementById('busca-input').focus(); },200);
+}
+
+function fecharModal(){
+  document.getElementById('modal-busca').classList.remove('show');
+  alimentoSelecionado = null;
+}
+
+// Wire up
+document.getElementById('btn-abrir-busca').addEventListener('click', abrirModal);
+document.getElementById('modal-fechar').addEventListener('click', fecharModal);
+document.getElementById('modal-busca').addEventListener('click', function(e){
+  if(e.target.id === 'modal-busca') fecharModal();
+});
+document.getElementById('busca-input').addEventListener('input', function(e){
+  document.getElementById('modal-confirma').classList.add('hidden');
+  renderListaAlimentos(e.target.value);
+});
+document.getElementById('confirma-input').addEventListener('input', function(e){
+  atualizarPreview(parseFloat(e.target.value) || 0);
+});
+document.querySelectorAll('.btn-quick-g button').forEach(function(b){
+  b.addEventListener('click', function(){
+    var g = parseFloat(b.dataset.g);
+    document.getElementById('confirma-input').value = g;
+    atualizarPreview(g);
+  });
+});
+document.getElementById('btn-confirma').addEventListener('click', confirmarAlimento);
+
+updateDate();setInterval(updateDate,60000);
+NUTS.forEach(function(n){setupNut(n);});
+calcStreak();
+renderHist();
+initParticles();
+atualizarBridgeChip();
+</script>
+</body>
+</html>
